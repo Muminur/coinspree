@@ -197,7 +197,7 @@ export class NotificationService {
   }
 
   /**
-   * Update user notification preferences
+   * Update user notification preferences (requires active subscription)
    */
   static async updateNotificationPreferences(
     userId: string,
@@ -207,6 +207,29 @@ export class NotificationService {
       const user = await KV.getUser(userId)
       if (!user) {
         return { success: false, error: 'User not found' }
+      }
+
+      // Check subscription status if trying to enable notifications
+      if (enabled) {
+        const subscription = await KV.getUserSubscription(userId)
+        const hasActiveSubscription = subscription && 
+          subscription.status === 'active' && 
+          new Date(subscription.endDate) > new Date()
+
+        if (!hasActiveSubscription) {
+          return { 
+            success: false, 
+            error: 'Active subscription required to enable notifications' 
+          }
+        }
+
+        // Admin users cannot enable notifications
+        if (user.role === 'admin') {
+          return { 
+            success: false, 
+            error: 'Admin users cannot enable notifications' 
+          }
+        }
       }
 
       const updatedUser = {

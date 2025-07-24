@@ -19,24 +19,10 @@
       "Bash(npx playwright:*)",
       "Bash(npm run test:*)",
       "Bash(npm test:*)",
-      "Bash(vercel:*)"
+      "Bash(vercel:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)"
     ],
     "deny": []
-  },
-  "hooks": {
-    "repo-security-check": {
-      "description": "Critical security check before creating any GitHub repository",
-      "trigger": "before any 'gh repo create' or repository creation commands",
-      "action": "Read and follow security-repo-hook.md - NEVER delete files, always use .gitignore to exclude sensitive data including .env files, .md files, .bat/.sh scripts, debug/dev/test directories, and temporary files. Use 'git rm --cached' to remove from tracking without deleting."
-    }
-  },
-  "security_reminders": {
-    "repository_creation": [
-      "🚨 CRITICAL: Before creating any repository, exclude sensitive files in .gitignore",
-      "⚠️  NEVER delete files - use 'git rm --cached' to remove from Git tracking only",
-      "🔒 Always exclude: .env*, *.md, *.bat, *.sh, scripts/, tests/, src/__tests__/, src/app/api/debug/, src/app/api/dev/",
-      "✅ Verify with: git ls-files | grep -E '\\.(env|md|sh|bat)$' should return 0 results",
-      "📋 Read .claude/security-repo-hook.md for complete checklist"
-    ]
   }
 }
