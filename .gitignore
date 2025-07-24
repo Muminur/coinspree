@@ -72,6 +72,7 @@ playwright-report/
 auth-section-example.tsx
 scripts/
 tests/
+src/__tests__/
 
 # Debug and development API routes (contain sensitive debugging info)
 src/app/api/debug/
