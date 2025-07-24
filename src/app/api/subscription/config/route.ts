@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { TronPayment } from '@/lib/tron'
 
+// API route to get subscription configuration
 export async function GET() {
   try {
     // Get subscription configuration
