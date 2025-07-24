@@ -28,6 +28,8 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.production.secrets
+.env.production.template
 
 # vercel
 .vercel
@@ -42,4 +44,28 @@ next-env.d.ts
 
 # OS
 Thumbs.db
-.vercel
+
+# Claude Code settings
+.claude/
+
+# Documentation and markdown files (EXCLUDE FROM REPO)
+*.md
+*.MD
+
+# Batch and shell scripts (EXCLUDE FROM REPO)
+*.bat
+*.sh
+
+# Temporary files
+*.tmp.*
+*_TEMP_*
+*_temp_*
+
+# Development directories
+deployment/
+docs/
+test-results/
+playwright-report/
+
+# Sensitive development files
+auth-section-example.tsx
