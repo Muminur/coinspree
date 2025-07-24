@@ -143,6 +143,11 @@ export function Navbar() {
                 >
                   💳 Subscription
                 </DropdownItem>
+                <DropdownItem
+                  onClick={() => router.push('/settings')}
+                >
+                  ⚙️ Settings
+                </DropdownItem>
                 <DropdownSeparator />
                 <DropdownItem
                   onClick={() => {
