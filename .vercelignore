@@ -1,0 +1,21 @@
+# Vercel ignore file
+node_modules
+.env*
+!.env.example
+!.env.production.template
+.git
+*.log
+coverage
+.nyc_output
+.DS_Store
+.vscode
+.idea
+docs/
+deployment/
+*.md
+!README.md
+src/__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx

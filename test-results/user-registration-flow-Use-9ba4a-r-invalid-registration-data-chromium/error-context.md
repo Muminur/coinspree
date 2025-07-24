@@ -1,0 +1,67 @@
+# Page snapshot
+
+```yaml
+- navigation:
+  - link "🚀 CoinSpree ATH Tracker":
+    - /url: /
+  - link "Home":
+    - /url: /
+  - button "🖥️"
+  - link "Login":
+    - /url: /login
+  - link "Sign Up":
+    - /url: /register
+- main:
+  - heading "Create Account" [level=1]
+  - paragraph: Join CoinSpree and never miss another all-time high
+  - heading "Create Account" [level=1]
+  - textbox "Email"
+  - textbox "Password"
+  - paragraph: Password must be at least 8 characters with uppercase, lowercase, and a number
+  - textbox "Confirm Password"
+  - button "Create Account"
+  - paragraph:
+    - text: Already have an account?
+    - link "Sign in":
+      - /url: /login
+- contentinfo:
+  - text: 🚀 CoinSpree ATH Tracker Pro
+  - paragraph: Real-time cryptocurrency All-Time High notifications for serious traders and investors worldwide.
+  - text: Live Tracking Top 100 Coins
+  - heading "📊 Product" [level=3]
+  - list:
+    - listitem:
+      - link "Dashboard":
+        - /url: /dashboard
+    - listitem:
+      - link "Pricing Plans":
+        - /url: /subscription
+    - listitem:
+      - link "ATH Analytics":
+        - /url: /dashboard/ath-history
+  - heading "👤 Account" [level=3]
+  - list:
+    - listitem:
+      - link "Login":
+        - /url: /login
+    - listitem:
+      - link "Create Account":
+        - /url: /register
+    - listitem:
+      - link "User Profile":
+        - /url: /profile
+  - heading "🛟 Support" [level=3]
+  - list:
+    - listitem:
+      - link "Help Center":
+        - /url: /help
+    - listitem:
+      - link "Contact Support":
+        - /url: /contact
+    - listitem:
+      - link "Privacy Policy":
+        - /url: /privacy
+  - paragraph: © 2025 CoinSpree. All rights reserved.
+  - text: Live API ⚡ Vercel Powered by 🦎 CoinGecko API
+- alert
+```

@@ -1,0 +1,102 @@
+# Page snapshot
+
+```yaml
+- navigation:
+  - link "🚀 CoinSpree ATH Tracker":
+    - /url: /
+  - link "Home":
+    - /url: /
+  - button "🖥️"
+  - link "Login":
+    - /url: /login
+  - link "Sign Up":
+    - /url: /register
+- main:
+  - text: 🚀 Real-time Crypto ATH Notifications
+  - heading "Never Miss Another All-Time High" [level=1]
+  - paragraph: Get instant notifications when your favorite cryptocurrencies hit new all-time highs. Stay ahead in the bull market with professional-grade alerts.
+  - link "🚀 Start Free Trial":
+    - /url: /register
+  - link "📊 View Dashboard":
+    - /url: /login
+  - paragraph: ✅ 7-day free trial • ✅ No credit card required • ✅ Cancel anytime
+  - text: 🏆
+  - heading "Cryptocurrencies Tracked" [level=3]
+  - text: 100+ 🎯
+  - heading "ATH Detection Accuracy" [level=3]
+  - text: 100% ⚡
+  - heading "Average Response Time" [level=3]
+  - text: < 30s 👥
+  - heading "Active Users" [level=3]
+  - text: 1,000+
+  - heading "Why Choose CoinSpree?" [level=2]
+  - paragraph: Professional crypto traders trust our platform for accurate, real-time ATH notifications.
+  - text: 🔔
+  - heading "Instant Notifications" [level=3]
+  - paragraph: Get email alerts the moment any of the top 100 cryptocurrencies hits a new all-time high.
+  - text: 📊
+  - heading "Real-time Data" [level=3]
+  - paragraph: Powered by CoinGecko API with 5-minute updates and 99.9% uptime guarantee.
+  - text: 💳
+  - heading "Simple Pricing" [level=3]
+  - paragraph: Pay with USDT on Tron network. $50/month for unlimited notifications.
+  - text: 🎯
+  - heading "100% Accuracy" [level=3]
+  - paragraph: Zero false positives. Our algorithm ensures you only get notified for genuine ATHs.
+  - text: 📈
+  - heading "ATH History" [level=3]
+  - paragraph: Access complete historical data of all ATHs with timestamps and percentage gains.
+  - text: 👑
+  - heading "Admin Dashboard" [level=3]
+  - paragraph: Advanced admin controls for user management and system monitoring.
+  - heading "Ready to Never Miss an ATH Again?" [level=2]
+  - paragraph: Join thousands of crypto traders who trust CoinSpree for their market timing.
+  - link "🚀 Start Your Free Trial":
+    - /url: /register
+  - link "💰 View Pricing":
+    - /url: /subscription
+  - paragraph:
+    - text: Have questions?
+    - link "Contact our support team":
+      - /url: /contact
+- contentinfo:
+  - text: 🚀 CoinSpree ATH Tracker Pro
+  - paragraph: Real-time cryptocurrency All-Time High notifications for serious traders and investors worldwide.
+  - text: Live Tracking Top 100 Coins
+  - heading "📊 Product" [level=3]
+  - list:
+    - listitem:
+      - link "Dashboard":
+        - /url: /dashboard
+    - listitem:
+      - link "Pricing Plans":
+        - /url: /subscription
+    - listitem:
+      - link "ATH Analytics":
+        - /url: /dashboard/ath-history
+  - heading "👤 Account" [level=3]
+  - list:
+    - listitem:
+      - link "Login":
+        - /url: /login
+    - listitem:
+      - link "Create Account":
+        - /url: /register
+    - listitem:
+      - link "User Profile":
+        - /url: /profile
+  - heading "🛟 Support" [level=3]
+  - list:
+    - listitem:
+      - link "Help Center":
+        - /url: /help
+    - listitem:
+      - link "Contact Support":
+        - /url: /contact
+    - listitem:
+      - link "Privacy Policy":
+        - /url: /privacy
+  - paragraph: © 2025 CoinSpree. All rights reserved.
+  - text: Live API ⚡ Vercel Powered by 🦎 CoinGecko API
+- alert
+```
