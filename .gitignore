@@ -70,3 +70,9 @@ playwright-report/
 
 # Sensitive development files
 auth-section-example.tsx
+scripts/
+tests/
+
+# Debug and development API routes (contain sensitive debugging info)
+src/app/api/debug/
+src/app/api/dev/
