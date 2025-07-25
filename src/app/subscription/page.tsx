@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { useAnalytics } from '@/hooks/useAnalytics'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus'
@@ -13,6 +14,7 @@ import type { Subscription } from '@/types'
 
 export default function SubscriptionPage() {
   const { user, loading } = useAuth()
+  const { trackUserAction, trackFeatureUsage } = useAnalytics()
   const [pendingSubscription, setPendingSubscription] = useState<Subscription | null>(null)
   const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null)
   const [loadingPending, setLoadingPending] = useState(true)
@@ -20,9 +22,16 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     if (user) {
+      // Track subscription page view with user context
+      trackFeatureUsage('subscription_page_view', {
+        userId: user.id,
+        hasActiveSubscription: !!activeSubscription,
+        hasPendingSubscription: !!pendingSubscription
+      })
+      
       fetchSubscriptionData()
     }
-  }, [user])
+  }, [user, activeSubscription, pendingSubscription, trackFeatureUsage])
 
   const fetchSubscriptionData = async () => {
     try {
@@ -59,6 +68,13 @@ export default function SubscriptionPage() {
   }
 
   const handlePaymentSubmitted = () => {
+    // Track payment submission
+    trackUserAction('subscription_payment_submitted', {
+      userId: user?.id,
+      hasActiveSubscription: !!activeSubscription,
+      paymentMethod: 'USDT'
+    })
+    
     // Trigger payment history refresh by updating the refresh trigger
     setPaymentHistoryRefresh(prev => prev + 1)
     // Also refresh subscription data to show pending subscriptions

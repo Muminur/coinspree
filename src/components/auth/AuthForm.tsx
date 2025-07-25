@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { useAnalytics } from '@/hooks/useAnalytics'
 
 interface AuthFormProps {
   mode: 'login' | 'register'
@@ -11,6 +12,7 @@ interface AuthFormProps {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter()
+  const { trackUserAction, trackConversion } = useAnalytics()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -21,6 +23,12 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     const formData = new FormData(e.currentTarget)
     const data = Object.fromEntries(formData)
+
+    // Track authentication attempt
+    trackUserAction(`${mode}_attempt`, {
+      email: data.email,
+      hasConfirmPassword: mode === 'register' ? !!data.confirmPassword : undefined
+    })
 
     try {
       console.log(`Submitting ${mode} form with:`, { 
@@ -40,9 +48,22 @@ export function AuthForm({ mode }: AuthFormProps) {
       console.log(`${mode} response:`, { success: result.success, error: result.error, hasFieldErrors: !!result.fieldErrors })
 
       if (result.success) {
+        // Track successful authentication
+        trackConversion(`${mode}_success`, {
+          email: data.email,
+          redirectTo: '/dashboard'
+        })
+        
         router.push('/dashboard')
         router.refresh()
       } else {
+        // Track authentication failure
+        trackUserAction(`${mode}_failure`, {
+          email: data.email,
+          errorType: result.fieldErrors ? 'validation' : 'server',
+          error: result.error
+        })
+
         // Handle field-specific validation errors
         if (result.fieldErrors) {
           setErrors(result.fieldErrors)
@@ -58,7 +79,14 @@ export function AuthForm({ mode }: AuthFormProps) {
           }
         }
       }
-    } catch {
+    } catch (error) {
+      // Track network/system errors
+      trackUserAction(`${mode}_error`, {
+        email: data.email,
+        errorType: 'network',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      
       setErrors({ form: 'An error occurred. Please try again.' })
     } finally {
       setLoading(false)

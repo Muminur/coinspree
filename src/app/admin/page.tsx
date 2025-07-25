@@ -201,6 +201,11 @@ export default function AdminDashboard() {
                 📊 Analytics
               </Button>
             </Link>
+            <Link href="/admin/monitoring">
+              <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white h-12">
+                🔧 Performance Monitor
+              </Button>
+            </Link>
             <Button 
               onClick={() => window.open('/api/admin/export', '_blank')}
               className="w-full bg-gray-600 hover:bg-gray-700 text-white h-12"

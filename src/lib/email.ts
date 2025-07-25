@@ -131,6 +131,12 @@ export async function sendATHNotificationEmail(
     deliveryLog.resendId = result.data?.id
     await KV.saveEmailDeliveryLog(deliveryLog)
 
+    // Track email delivery for analytics
+    await trackEmailDeliveryAnalytics(emailId, user.id, 'ath-notification', user.email, 'sent', {
+      cryptoSymbol: notificationData.symbol,
+      resendId: result.data?.id
+    })
+
     console.log(
       `ATH notification sent to ${user.email} for ${notificationData.symbol}`
     )
@@ -195,12 +201,24 @@ export async function sendWelcomeEmail(
       deliveryLog.status = 'failed'
       deliveryLog.errorMessage = result.error.message || result.error.toString() || 'Email sending failed'
       await KV.saveEmailDeliveryLog(deliveryLog)
+      
+      // Track failed email delivery for analytics
+      await trackEmailDeliveryAnalytics(emailId, user.id, 'welcome', user.email, 'failed', {
+        errorMessage: deliveryLog.errorMessage,
+        resendId: result.data?.id
+      })
+      
       return { success: false, error: deliveryLog.errorMessage }
     }
 
     // Update delivery log with Resend ID
     deliveryLog.resendId = result.data?.id
     await KV.saveEmailDeliveryLog(deliveryLog)
+    
+    // Track successful email delivery for analytics
+    await trackEmailDeliveryAnalytics(emailId, user.id, 'welcome', user.email, 'sent', {
+      resendId: result.data?.id
+    })
 
     return { success: true, emailId }
   } catch (error) {
@@ -265,12 +283,26 @@ export async function sendSubscriptionExpiryEmail(
       deliveryLog.status = 'failed'
       deliveryLog.errorMessage = result.error.message || result.error.toString() || 'Email sending failed'
       await KV.saveEmailDeliveryLog(deliveryLog)
+      
+      // Track failed email delivery for analytics
+      await trackEmailDeliveryAnalytics(emailId, user.id, 'subscription-expiry', user.email, 'failed', {
+        daysUntilExpiry,
+        errorMessage: deliveryLog.errorMessage,
+        resendId: result.data?.id
+      })
+      
       return { success: false, error: deliveryLog.errorMessage }
     }
 
     // Update delivery log with Resend ID
     deliveryLog.resendId = result.data?.id
     await KV.saveEmailDeliveryLog(deliveryLog)
+    
+    // Track successful email delivery for analytics
+    await trackEmailDeliveryAnalytics(emailId, user.id, 'subscription-expiry', user.email, 'sent', {
+      daysUntilExpiry,
+      resendId: result.data?.id
+    })
 
     return { success: true, emailId }
   } catch (error) {
@@ -332,12 +364,26 @@ export async function sendPasswordResetEmail(
       deliveryLog.status = 'failed'
       deliveryLog.errorMessage = result.error.message || result.error.toString() || 'Email sending failed'
       await KV.saveEmailDeliveryLog(deliveryLog)
+      
+      // Track failed email delivery for analytics
+      await trackEmailDeliveryAnalytics(emailId, user.id, 'password-reset', user.email, 'failed', {
+        resetToken,
+        errorMessage: deliveryLog.errorMessage,
+        resendId: result.data?.id
+      })
+      
       return { success: false, error: deliveryLog.errorMessage }
     }
 
     // Update delivery log with Resend ID
     deliveryLog.resendId = result.data?.id
     await KV.saveEmailDeliveryLog(deliveryLog)
+    
+    // Track successful email delivery for analytics
+    await trackEmailDeliveryAnalytics(emailId, user.id, 'password-reset', user.email, 'sent', {
+      resetToken,
+      resendId: result.data?.id
+    })
 
     return { success: true, emailId }
   } catch (error) {
@@ -710,7 +756,7 @@ async function getOrCreateUnsubscribeToken(userId: string): Promise<string> {
   return token
 }
 
-// Email delivery tracking
+// Email delivery tracking for KV database updates
 export async function trackEmailDelivery(
   emailId: string,
   status: EmailDeliveryLog['status'],
@@ -727,6 +773,52 @@ export async function trackEmailDelivery(
     )
   } catch (error) {
     console.error('Failed to track email delivery:', error)
+  }
+}
+
+// Email delivery analytics tracking
+export async function trackEmailDeliveryAnalytics(
+  emailId: string,
+  userId: string,
+  emailType: string,
+  recipientEmail: string,
+  status: 'sent' | 'delivered' | 'failed' | 'bounced',
+  metadata?: Record<string, any>
+): Promise<void> {
+  try {
+    // Send analytics event to the email analytics API endpoint
+    const analyticsData = {
+      emailId,
+      userId,
+      emailType,
+      recipientEmail,
+      deliveryTime: Date.now(),
+      status,
+      errorMessage: metadata?.errorMessage,
+      bounced: status === 'bounced',
+      opened: false, // Will be updated by webhook if available
+      clicked: false, // Will be updated by webhook if available
+      metadata
+    }
+
+    // Make internal API call to record analytics
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/admin/email-analytics`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(analyticsData)
+    })
+
+    if (!response.ok) {
+      console.warn('Failed to record email analytics:', await response.text())
+    }
+
+    console.log(`📧 Email analytics tracked: ${emailType} ${status} for ${recipientEmail}`)
+    
+  } catch (error) {
+    console.error('❌ Failed to track email delivery analytics:', error)
+    // Don't throw error to avoid breaking email sending flow
   }
 }
 

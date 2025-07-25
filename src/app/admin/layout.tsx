@@ -43,6 +43,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { path: '/admin/subscriptions', label: 'Subscriptions', icon: '💳' },
     { path: '/admin/pending-payments', label: 'Pending Payments', icon: '⏳' },
     { path: '/admin/analytics', label: 'Analytics', icon: '📊' },
+    { path: '/admin/monitoring', label: 'Performance Monitor', icon: '🔧' },
+    { path: '/admin/email-analytics', label: 'Email Analytics', icon: '📧' },
+    { path: '/admin/subscription-analytics', label: 'Subscription Analytics', icon: '💰' },
+    { path: '/admin/error-tracking', label: 'Error Tracking', icon: '🐛' },
+    { path: '/admin/feedback', label: 'User Feedback', icon: '💬' },
+    { path: '/admin/performance-alerts', label: 'Performance Alerts', icon: '🚨' },
+    { path: '/admin/cache-management', label: 'Cache Management', icon: '🚀' },
+    { path: '/admin/ab-testing', label: 'A/B Testing', icon: '🧪' },
     { path: '/admin/config', label: 'System Config', icon: '⚙️' },
   ]
 

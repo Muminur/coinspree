@@ -21,7 +21,8 @@
       "Bash(npm test:*)",
       "Bash(vercel:*)",
       "Bash(git:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": []
   }
