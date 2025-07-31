@@ -17,12 +17,16 @@
   },
   "crons": [
     {
-      "path": "/api/cron/update-crypto",
-      "schedule": "0 0 * * *"
+      "path": "/api/cron/ath-detection",
+      "schedule": "*/1 * * * *"
     },
     {
-      "path": "/api/cron/subscription-maintenance",
-      "schedule": "0 2 * * *"
+      "path": "/api/cron/subscription-expiry",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/email-queue",
+      "schedule": "*/2 * * * *"
     }
   ],
   "headers": [

@@ -20,13 +20,17 @@ export function AuthForm({ mode }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
+    // Store form reference before async operations
+    const form = e.currentTarget
+    
     // Prevent double submissions with multiple safeguards
     if (loading) return
     
-    // Debounce mechanism - prevent submissions within 1 second
+    // Debounce mechanism - prevent submissions within 500ms (reduced from 1 second)
     const now = Date.now()
-    if (now - lastSubmitTime.current < 1000) {
+    if (now - lastSubmitTime.current < 500) {
       console.log('Form submission blocked - too soon after last attempt')
+      setErrors({ form: 'Please wait a moment before trying again.' })
       return
     }
     lastSubmitTime.current = now
@@ -34,7 +38,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     setLoading(true)
     setErrors({})
 
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData(form)
     const data = Object.fromEntries(formData)
 
     // Track authentication attempt
@@ -57,8 +61,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         body: JSON.stringify(data),
       })
 
+      console.log(`${mode} response status:`, response.status, response.statusText)
       const result = await response.json()
-      console.log(`${mode} response:`, { success: result.success, error: result.error, hasFieldErrors: !!result.fieldErrors })
+      console.log(`${mode} response:`, { success: result.success, error: result.error, hasFieldErrors: !!result.fieldErrors, fullResult: result })
 
       if (result.success) {
         // Track successful authentication
@@ -68,7 +73,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         })
         
         // Reset form and keep loading state until redirect
-        e.currentTarget.reset()
+        form.reset()
         
         // Use replace instead of push to avoid back navigation issues
         // Remove router.refresh() to prevent race conditions
@@ -100,6 +105,8 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
       }
     } catch (error) {
+      console.error(`${mode} catch block error:`, error)
+      
       // Track network/system errors
       trackUserAction(`${mode}_error`, {
         email: data.email,
@@ -107,7 +114,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         error: error instanceof Error ? error.message : 'Unknown error'
       })
       
-      setErrors({ form: 'An error occurred. Please try again.' })
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred. Please try again.'
+      console.log('Setting error message:', errorMessage)
+      setErrors({ form: errorMessage })
     } finally {
       // Only set loading to false if we're not redirecting (success case returns early)
       setLoading(false)

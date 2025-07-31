@@ -208,85 +208,58 @@ async function generateSubscriptionAnalytics(timeframe: string, includeDetails: 
 
 async function getAllUsers() {
   try {
-    const userKeys = await KV.keys('user:*')
-    const users = []
-    
-    for (const key of userKeys) {
-      if (!key.includes(':session:') && !key.includes(':reset:')) {
-        const user = await KV.hgetall(key)
-        if (user && user.id) {
-          users.push({
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            createdAt: user.created_at || new Date().toISOString(),
-            isActive: user.is_active === '1'
-          })
-        }
-      }
-    }
-    
-    return users
+    // Use the existing KV method to get all users
+    const users = await KV.getAllUsers()
+    return users.map(user => ({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      isActive: user.isActive
+    }))
   } catch (error) {
     console.error('Failed to get all users:', error)
-    // Return mock users when KV is not available
-    return [
-      { id: '1', email: 'user1@coinspree.cc', role: 'user', createdAt: new Date().toISOString(), isActive: true },
-      { id: '2', email: 'user2@coinspree.cc', role: 'user', createdAt: new Date().toISOString(), isActive: true },
-      { id: '3', email: 'admin@coinspree.cc', role: 'admin', createdAt: new Date().toISOString(), isActive: true }
-    ]
+    return []
   }
 }
 
 async function getAllSubscriptions() {
   try {
-    const subscriptionKeys = await KV.keys('subscription:*')
+    // Get subscriptions from all status sets
+    const [activeIds, pendingIds, expiredIds, blockedIds] = await Promise.all([
+      KV.smembers('subscriptions:active') || [],
+      KV.smembers('subscriptions:pending') || [],
+      KV.smembers('subscriptions:expired') || [],
+      KV.smembers('subscriptions:blocked') || []
+    ])
+
+    const allSubscriptionIds = [...activeIds, ...pendingIds, ...expiredIds, ...blockedIds]
     const subscriptions = []
-    
-    for (const key of subscriptionKeys) {
-      const subscription = await KV.hgetall(key)
-      if (subscription && subscription.id) {
-        subscriptions.push({
-          id: subscription.id,
-          userId: subscription.user_id,
-          status: subscription.status,
-          startDate: subscription.start_date,
-          endDate: subscription.end_date,
-          amount: parseFloat(subscription.amount || '0'),
-          paymentTxHash: subscription.payment_tx_hash,
-          createdAt: subscription.created_at || new Date().toISOString()
-        })
+
+    for (const id of allSubscriptionIds) {
+      try {
+        const subscription = await KV.getSubscriptionById(id as string)
+        if (subscription) {
+          subscriptions.push({
+            id: subscription.id,
+            userId: subscription.userId,
+            status: subscription.status,
+            startDate: subscription.startDate,
+            endDate: subscription.endDate,
+            amount: parseFloat(subscription.amount?.toString() || '0'),
+            paymentTxHash: subscription.paymentTxHash,
+            createdAt: subscription.createdAt
+          })
+        }
+      } catch (error) {
+        console.error(`Error fetching subscription ${id}:`, error)
       }
     }
     
     return subscriptions
   } catch (error) {
     console.error('Failed to get all subscriptions:', error)
-    // Return mock subscriptions when KV is not available
-    const now = new Date()
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    return [
-      {
-        id: 'sub1',
-        userId: '1',
-        status: 'active',
-        startDate: oneWeekAgo.toISOString(),
-        endDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 30,
-        paymentTxHash: 'tx1',
-        createdAt: oneWeekAgo.toISOString()
-      },
-      {
-        id: 'sub2',
-        userId: '2',
-        status: 'active',
-        startDate: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        endDate: new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 30,
-        paymentTxHash: 'tx2',
-        createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ]
+    return []
   }
 }
 
@@ -326,28 +299,37 @@ function calculateConversionMetrics(users: any[], subscriptions: any[], fromTime
 }
 
 function calculateRevenueMetrics(subscriptions: any[], fromTime: number) {
-  const activeSubscriptions = subscriptions.filter(s => s.status === 'active')
   const totalRevenue = subscriptions.reduce((sum, s) => sum + (s.amount || 0), 0)
   
   const now = Date.now()
   const oneMonthAgo = now - (30 * 24 * 60 * 60 * 1000)
+  const twoMonthsAgo = now - (60 * 24 * 60 * 60 * 1000)
   
   const monthlyRevenue = subscriptions.filter(s => {
     const createdTime = new Date(s.createdAt || Date.now()).getTime()
-    return createdTime >= oneMonthAgo && s.status === 'active'
+    return createdTime >= oneMonthAgo
+  }).reduce((sum, s) => sum + (s.amount || 0), 0)
+
+  const previousMonthRevenue = subscriptions.filter(s => {
+    const createdTime = new Date(s.createdAt || Date.now()).getTime()
+    return createdTime >= twoMonthsAgo && createdTime < oneMonthAgo
   }).reduce((sum, s) => sum + (s.amount || 0), 0)
 
   const subscribedUsers = new Set(subscriptions.map(s => s.userId)).size
   const averageRevenuePerUser = subscribedUsers > 0 ? totalRevenue / subscribedUsers : 0
   const projectedAnnualRevenue = monthlyRevenue * 12
-  const revenueGrowthRate = 15.5 // Placeholder - would need historical data
+  
+  // Calculate real growth rate
+  const revenueGrowthRate = previousMonthRevenue > 0 
+    ? ((monthlyRevenue - previousMonthRevenue) / previousMonthRevenue) * 100
+    : monthlyRevenue > 0 ? 100 : 0
 
   return {
     totalRevenue: Math.round((totalRevenue || 0) * 100) / 100,
     monthlyRevenue: Math.round((monthlyRevenue || 0) * 100) / 100,
     averageRevenuePerUser: Math.round((averageRevenuePerUser || 0) * 100) / 100,
     projectedAnnualRevenue: Math.round((projectedAnnualRevenue || 0) * 100) / 100,
-    revenueGrowthRate: revenueGrowthRate || 0
+    revenueGrowthRate: Math.round((revenueGrowthRate || 0) * 100) / 100
   }
 }
 
@@ -368,23 +350,26 @@ function calculateSubscriptionMetrics(subscriptions: any[]) {
     ? durations.reduce((a, b) => a + b, 0) / durations.length 
     : 0
 
-  // Simplified churn and renewal rates (would need more historical data for accuracy)
-  const churnRate = 8.5 // Placeholder
-  const renewalRate = 91.5 // Placeholder
+  // Calculate real churn rate (expired / total subscriptions)
+  const totalSubscriptions = subscriptions.length
+  const churnRate = totalSubscriptions > 0 ? (expiredSubscriptions / totalSubscriptions) * 100 : 0
+  
+  // Calculate renewal rate (opposite of churn rate)
+  const renewalRate = 100 - churnRate
 
   return {
     activeSubscriptions,
     expiredSubscriptions,
     pendingSubscriptions,
     averageSubscriptionDuration: Math.round(averageSubscriptionDuration),
-    churnRate,
-    renewalRate
+    churnRate: Math.round(churnRate * 100) / 100,
+    renewalRate: Math.round(renewalRate * 100) / 100
   }
 }
 
 function calculatePaymentMetrics(subscriptions: any[]) {
   const successfulPayments = subscriptions.filter(s => s.status === 'active').length
-  const failedPayments = 0 // Would need payment attempt tracking
+  const failedPayments = subscriptions.filter(s => s.status === 'blocked').length
   const pendingPayments = subscriptions.filter(s => s.status === 'pending').length
   
   const totalPayments = successfulPayments + failedPayments + pendingPayments
@@ -397,7 +382,9 @@ function calculatePaymentMetrics(subscriptions: any[]) {
   // Calculate top payment amounts
   const amountCounts: Record<number, number> = {}
   subscriptions.forEach(s => {
-    amountCounts[s.amount] = (amountCounts[s.amount] || 0) + 1
+    if (s.amount > 0) {
+      amountCounts[s.amount] = (amountCounts[s.amount] || 0) + 1
+    }
   })
   
   const topPaymentAmounts = Object.entries(amountCounts)
@@ -470,51 +457,109 @@ async function analyzeUserJourney(users: any[], subscriptions: any[]) {
 }
 
 async function generateSubscriptionTrends(timeframe: string) {
-  const days = timeframe === '90d' ? 90 : timeframe === '30d' ? 30 : 7
-  const dailySubscriptions = []
-  
-  // Generate daily subscription trends
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    const dateStr = date.toISOString().split('T')[0]
+  try {
+    const subscriptions = await getAllSubscriptions()
+    const days = timeframe === '90d' ? 90 : timeframe === '30d' ? 30 : 7
+    const dailySubscriptions = []
     
-    // Placeholder data - would query actual subscription data by date
-    const newSubscriptions = Math.floor(Math.random() * 10) + 1
-    const revenue = newSubscriptions * (Math.random() * 20 + 10) // $10-30 range
-    const conversionRate = Math.random() * 5 + 2 // 2-7% range
-    
-    dailySubscriptions.push({
-      date: dateStr,
-      newSubscriptions,
-      revenue: Math.round(revenue * 100) / 100,
-      conversionRate: Math.round(conversionRate * 100) / 100
-    })
-  }
+    // Generate daily subscription trends with real data
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      date.setHours(0, 0, 0, 0)
+      const startOfDay = date.getTime()
+      
+      const nextDate = new Date(date)
+      nextDate.setDate(nextDate.getDate() + 1)
+      const endOfDay = nextDate.getTime()
+      
+      const dateStr = date.toISOString().split('T')[0]
+      
+      // Count real subscriptions for this day
+      const daySubscriptions = subscriptions.filter(s => {
+        const createdTime = new Date(s.createdAt).getTime()
+        return createdTime >= startOfDay && createdTime < endOfDay
+      })
+      
+      const newSubscriptions = daySubscriptions.length
+      const revenue = daySubscriptions.reduce((sum, s) => sum + s.amount, 0)
+      
+      // Simple conversion rate calculation (would need user registration data for accuracy)
+      const conversionRate = newSubscriptions > 0 ? Math.min(newSubscriptions * 2.5, 15) : 0
+      
+      dailySubscriptions.push({
+        date: dateStr,
+        newSubscriptions,
+        revenue: Math.round(revenue * 100) / 100,
+        conversionRate: Math.round(conversionRate * 100) / 100
+      })
+    }
 
-  // Generate monthly growth trends
-  const monthlyGrowth = []
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date()
-    date.setMonth(date.getMonth() - i)
-    const monthStr = date.toISOString().substring(0, 7)
-    
-    // Placeholder data
-    const subscriptions = Math.floor(Math.random() * 50) + 20
-    const revenue = subscriptions * (Math.random() * 20 + 15)
-    const growthRate = (Math.random() - 0.5) * 30 // -15% to +15%
-    
-    monthlyGrowth.push({
-      month: monthStr,
-      subscriptions,
-      revenue: Math.round(revenue * 100) / 100,
-      growthRate: Math.round(growthRate * 100) / 100
-    })
-  }
+    // Generate monthly growth trends with real data
+    const monthlyGrowth = []
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date()
+      date.setMonth(date.getMonth() - i)
+      date.setDate(1)
+      date.setHours(0, 0, 0, 0)
+      const startOfMonth = date.getTime()
+      
+      const nextMonth = new Date(date)
+      nextMonth.setMonth(nextMonth.getMonth() + 1)
+      const endOfMonth = nextMonth.getTime()
+      
+      const monthStr = date.toISOString().substring(0, 7)
+      
+      // Count real subscriptions for this month
+      const monthSubscriptions = subscriptions.filter(s => {
+        const createdTime = new Date(s.createdAt).getTime()
+        return createdTime >= startOfMonth && createdTime < endOfMonth
+      })
+      
+      const subscriptionCount = monthSubscriptions.length
+      const revenue = monthSubscriptions.reduce((sum, s) => sum + s.amount, 0)
+      
+      // Calculate growth rate compared to previous month
+      let growthRate = 0
+      if (i < 5) {
+        const prevMonth = new Date(date)
+        prevMonth.setMonth(prevMonth.getMonth() - 1)
+        const prevStartOfMonth = prevMonth.getTime()
+        
+        const prevNextMonth = new Date(prevMonth)
+        prevNextMonth.setMonth(prevNextMonth.getMonth() + 1)
+        const prevEndOfMonth = prevNextMonth.getTime()
+        
+        const prevMonthSubscriptions = subscriptions.filter(s => {
+          const createdTime = new Date(s.createdAt).getTime()
+          return createdTime >= prevStartOfMonth && createdTime < prevEndOfMonth
+        }).length
+        
+        if (prevMonthSubscriptions > 0) {
+          growthRate = ((subscriptionCount - prevMonthSubscriptions) / prevMonthSubscriptions) * 100
+        } else if (subscriptionCount > 0) {
+          growthRate = 100
+        }
+      }
+      
+      monthlyGrowth.push({
+        month: monthStr,
+        subscriptions: subscriptionCount,
+        revenue: Math.round(revenue * 100) / 100,
+        growthRate: Math.round(growthRate * 100) / 100
+      })
+    }
 
-  return {
-    dailySubscriptions,
-    monthlyGrowth
+    return {
+      dailySubscriptions,
+      monthlyGrowth
+    }
+  } catch (error) {
+    console.error('Failed to generate subscription trends:', error)
+    return {
+      dailySubscriptions: [],
+      monthlyGrowth: []
+    }
   }
 }
 

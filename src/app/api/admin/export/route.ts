@@ -29,8 +29,8 @@ export async function GET() {
       notifications: [] as any[]
     }
 
-    // Get all users (excluding sensitive data)
-    const allUsers = await KV.getAllUsers()
+    // Get all users (excluding sensitive data like passwords)
+    const allUsers = await KV.getAllSafeUsers()
     exportData.users = allUsers.map(user => ({
       id: user.id,
       email: user.email,
@@ -39,7 +39,7 @@ export async function GET() {
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       notificationsEnabled: user.notificationsEnabled
-      // Excluding passwordHash for security
+      // passwordHash is automatically excluded by getAllSafeUsers()
     }))
 
     // Get all subscriptions
