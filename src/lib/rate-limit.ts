@@ -62,8 +62,8 @@ export class RateLimit {
 
 // Rate limiters for different endpoints
 export const authLimiter = new RateLimit({
-  interval: process.env.NODE_ENV === 'development' ? 10 : 900, // 10 seconds in dev, 15 minutes in prod
-  uniqueTokenPerInterval: process.env.NODE_ENV === 'development' ? 1000 : 5, // 1000 attempts in dev, 5 in prod
+  interval: process.env.NODE_ENV === 'development' ? 10 : 300, // 10 seconds in dev, 5 minutes in prod
+  uniqueTokenPerInterval: process.env.NODE_ENV === 'development' ? 1000 : 10, // 1000 attempts in dev, 10 in prod
 })
 
 export const passwordResetLimiter = new RateLimit({
