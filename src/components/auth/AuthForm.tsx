@@ -72,12 +72,15 @@ export function AuthForm({ mode }: AuthFormProps) {
           redirectTo: '/dashboard'
         })
         
-        // Reset form and keep loading state until redirect
+        // Reset form and redirect
         form.reset()
         
-        // Use replace instead of push to avoid back navigation issues
-        // Remove router.refresh() to prevent race conditions
-        router.replace('/dashboard')
+        // Use window.location for more reliable redirect in production
+        if (typeof window !== 'undefined') {
+          window.location.href = '/dashboard'
+        } else {
+          router.replace('/dashboard')
+        }
         
         // Don't set loading to false - keep it true until redirect completes
         return

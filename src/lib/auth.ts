@@ -64,7 +64,7 @@ export class Auth {
     cookies().set('session', sessionId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       expires: expiresAt,
       path: '/',
     })

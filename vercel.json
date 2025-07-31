@@ -56,7 +56,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://assets.coingecko.com https://tronscan.org; connect-src 'self' https://api.coingecko.com https://apilist.tronscanapi.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://assets.coingecko.com https://tronscan.org; connect-src 'self' https://api.coingecko.com https://apilist.tronscanapi.com; font-src 'self' data:; object-src 'none'; base-uri 'self';"
         }
       ]
     }
