@@ -18,15 +18,11 @@
   "crons": [
     {
       "path": "/api/cron/ath-detection",
-      "schedule": "*/1 * * * *"
-    },
-    {
-      "path": "/api/cron/subscription-expiry",
       "schedule": "0 9 * * *"
     },
     {
-      "path": "/api/cron/email-queue",
-      "schedule": "*/2 * * * *"
+      "path": "/api/cron/subscription-expiry",
+      "schedule": "0 10 * * *"
     }
   ],
   "headers": [
