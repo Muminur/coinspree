@@ -15,7 +15,7 @@ export function MainLayout({ children, showSidebar = false }: MainLayoutProps) {
   return (
     <FeedbackWidgetProvider>
       <div className="min-h-screen bg-background">
-        <Navbar />
+        <Navbar showSidebar={showSidebar} />
         
         <div className={`flex ${showSidebar ? 'pt-16' : ''}`}>
           {showSidebar && (

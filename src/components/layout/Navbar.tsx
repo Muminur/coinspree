@@ -11,7 +11,11 @@ import { ThemeToggleCompact } from '@/components/ui/ThemeToggle'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 
-export function Navbar() {
+interface NavbarProps {
+  showSidebar?: boolean
+}
+
+export function Navbar({ showSidebar = false }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -27,6 +31,33 @@ export function Navbar() {
   const adminItems = [
     { href: '/admin', label: 'Admin', requiresAdmin: true },
   ]
+
+  // Sidebar menu items (when showSidebar is true)
+  const sidebarMenuItems = showSidebar ? [
+    {
+      section: 'Overview',
+      items: [
+        { href: '/dashboard', label: 'Dashboard', icon: '📊', requiresAuth: true },
+        { href: '/dashboard/notifications', label: 'Notifications', icon: '🔔', requiresAuth: true },
+      ]
+    },
+    {
+      section: 'Account',
+      items: [
+        { href: '/profile', label: 'Profile', icon: '👤', requiresAuth: true },
+        { href: '/subscription', label: 'Subscription', icon: '💳', requiresAuth: true },
+        { href: '/settings', label: 'Settings', icon: '⚙️', requiresAuth: true },
+      ]
+    },
+    {
+      section: 'Crypto Data',
+      items: [
+        { href: '/dashboard/top100', label: 'Top 100', icon: '🏆', requiresAuth: true },
+        { href: '/dashboard/ath-history', label: 'ATH History', icon: '📈', requiresAuth: true },
+        { href: '/dashboard/favorites', label: 'Favorites', icon: '⭐', requiresAuth: true },
+      ]
+    }
+  ] : []
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -201,8 +232,9 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-white/10 bg-white/5 backdrop-blur-sm rounded-b-2xl mt-2">
+          <div className="md:hidden py-4 border-t border-white/10 bg-white/5 backdrop-blur-sm rounded-b-2xl mt-2 max-h-[80vh] overflow-y-auto">
             <div className="space-y-2">
+              {/* Regular Navigation Items */}
               {navItems
                 .filter(item => 
                   item.public || 
@@ -215,8 +247,8 @@ export function Navbar() {
                   className={cn(
                     'block px-3 py-2 rounded-md text-sm font-medium transition-colors',
                     isActive(item.href)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      ? 'bg-white/20 text-white'
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
                   )}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -224,32 +256,65 @@ export function Navbar() {
                 </Link>
               ))}
 
+              {/* Sidebar Menu Items (when showSidebar is true) */}
+              {showSidebar && user && sidebarMenuItems.length > 0 && (
+                <div className="pt-3 border-t border-white/10">
+                  {sidebarMenuItems.map((section) => (
+                    <div key={section.section} className="mb-4">
+                      <h3 className="px-3 py-1 text-xs font-semibold text-white/60 uppercase tracking-wider">
+                        {section.section}
+                      </h3>
+                      <div className="space-y-1">
+                        {section.items
+                          .filter(item => !item.requiresAuth || user)
+                          .map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                              isActive(item.href)
+                                ? 'bg-white/20 text-white'
+                                : 'text-white/80 hover:text-white hover:bg-white/10'
+                            )}
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <span className="text-lg">{item.icon}</span>
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Mobile Theme Toggle */}
-              <div className="px-3 py-2">
+              <div className="px-3 py-2 border-t border-white/10">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Theme</span>
+                  <span className="text-sm text-white/70">Theme</span>
                   <ThemeToggleCompact />
                 </div>
               </div>
 
               {/* Mobile Auth */}
               {user ? (
-                <div className="pt-4 border-t border-border space-y-2">
-                  <div className="px-3 text-sm text-muted-foreground">
+                <div className="pt-4 border-t border-white/10 space-y-2">
+                  <div className="px-3 text-sm text-white/70">
                     {user.email}
                   </div>
                   <div className="px-3">
-                    <LogoutButton size="sm" className="w-full" />
+                    <LogoutButton size="sm" className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30" />
                   </div>
                 </div>
               ) : (
-                <div className="pt-4 border-t border-border space-y-2">
-                  <Button variant="secondary" size="sm" className="w-full" asChild>
+                <div className="pt-4 border-t border-white/10 space-y-2">
+                  <Button variant="secondary" size="sm" className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20" asChild>
                     <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                       Login
                     </Link>
                   </Button>
-                  <Button size="sm" className="w-full" asChild>
+                  <Button size="sm" className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white" asChild>
                     <Link href="/register" onClick={() => setIsMenuOpen(false)}>
                       Sign Up
                     </Link>
