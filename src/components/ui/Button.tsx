@@ -52,6 +52,14 @@ export function Button({
       className={buttonClassName}
       disabled={disabled || loading}
       {...props}
+      // Prevent double-click submissions
+      onClick={(e) => {
+        if (loading || disabled) {
+          e.preventDefault()
+          return false
+        }
+        props.onClick?.(e)
+      }}
     >
       {loading ? (
         <div className="flex items-center gap-2">

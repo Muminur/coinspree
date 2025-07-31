@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -15,9 +15,22 @@ export function AuthForm({ mode }: AuthFormProps) {
   const { trackUserAction, trackConversion } = useAnalytics()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const lastSubmitTime = useRef<number>(0)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    // Prevent double submissions with multiple safeguards
+    if (loading) return
+    
+    // Debounce mechanism - prevent submissions within 1 second
+    const now = Date.now()
+    if (now - lastSubmitTime.current < 1000) {
+      console.log('Form submission blocked - too soon after last attempt')
+      return
+    }
+    lastSubmitTime.current = now
+    
     setLoading(true)
     setErrors({})
 
@@ -54,8 +67,15 @@ export function AuthForm({ mode }: AuthFormProps) {
           redirectTo: '/dashboard'
         })
         
-        router.push('/dashboard')
-        router.refresh()
+        // Reset form and keep loading state until redirect
+        e.currentTarget.reset()
+        
+        // Use replace instead of push to avoid back navigation issues
+        // Remove router.refresh() to prevent race conditions
+        router.replace('/dashboard')
+        
+        // Don't set loading to false - keep it true until redirect completes
+        return
       } else {
         // Track authentication failure
         trackUserAction(`${mode}_failure`, {
@@ -89,6 +109,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       
       setErrors({ form: 'An error occurred. Please try again.' })
     } finally {
+      // Only set loading to false if we're not redirecting (success case returns early)
       setLoading(false)
     }
   }
