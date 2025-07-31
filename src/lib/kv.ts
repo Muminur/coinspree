@@ -257,6 +257,58 @@ export class KV {
     }
   }
 
+  static async setCryptoCacheTop200(data: CryptoAsset[], ttl: number): Promise<void> {
+    await kv.setex('crypto:top200', ttl, JSON.stringify(data))
+  }
+
+  static async getCryptoCacheTop200(): Promise<CryptoAsset[] | null> {
+    try {
+      const cached = await kv.get('crypto:top200')
+      if (!cached) return null
+      
+      // If it's already an object/array, return it
+      if (typeof cached === 'object') {
+        return cached as CryptoAsset[]
+      }
+      
+      // If it's a string, parse it
+      if (typeof cached === 'string') {
+        return JSON.parse(cached)
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Error getting top 200 crypto cache:', error)
+      return null
+    }
+  }
+
+  static async setCryptoCache101to200(data: CryptoAsset[], ttl: number): Promise<void> {
+    await kv.setex('crypto:101-200', ttl, JSON.stringify(data))
+  }
+
+  static async getCryptoCache101to200(): Promise<CryptoAsset[] | null> {
+    try {
+      const cached = await kv.get('crypto:101-200')
+      if (!cached) return null
+      
+      // If it's already an object/array, return it
+      if (typeof cached === 'object') {
+        return cached as CryptoAsset[]
+      }
+      
+      // If it's a string, parse it
+      if (typeof cached === 'string') {
+        return JSON.parse(cached)
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Error getting 101-200 crypto cache:', error)
+      return null
+    }
+  }
+
   static async getCrypto(id: string): Promise<CryptoAsset | null> {
     return (await kv.hgetall(`crypto:${id}`)) as CryptoAsset | null
   }

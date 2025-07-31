@@ -24,16 +24,28 @@ export function ATHHistoryTable() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isDemoData, setIsDemoData] = useState(false)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [totalRecords, setTotalRecords] = useState(0)
 
   useEffect(() => {
     fetchATHHistory()
-  }, [])
+  }, [currentPage, pageSize])
 
   const fetchATHHistory = async () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch('/api/crypto/ath-history', {
+      
+      // Add pagination parameters to the API call
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+      })
+      
+      const response = await fetch(`/api/crypto/ath-history?${params}`, {
         credentials: 'include', // Include cookies for authentication
         headers: {
           'Content-Type': 'application/json',
@@ -67,6 +79,7 @@ export function ATHHistoryTable() {
       }))
       
       setATHRecords(transformedRecords)
+      setTotalRecords(data.totalRecords || transformedRecords.length)
       setIsDemoData(data.demo || false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load ATH history')
@@ -87,9 +100,41 @@ export function ATHHistoryTable() {
     )
   }
 
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalRecords / pageSize)
+  const startRecord = (currentPage - 1) * pageSize + 1
+  const endRecord = Math.min(currentPage * pageSize, totalRecords)
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+    }
+  }
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize)
+    setCurrentPage(1) // Reset to first page when changing page size
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Show:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span className="text-sm text-muted-foreground">per page</span>
+          </div>
+        </div>
+        
         <Button
           variant="secondary"
           size="sm"
@@ -198,10 +243,65 @@ export function ATHHistoryTable() {
         </TableBody>
       </Table>
 
+      {/* Pagination Controls */}
+      {!loading && totalRecords > 0 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {startRecord}-{endRecord} of {totalRecords} ATH records
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
+              ← Previous
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+            >
+              Next →
+            </Button>
+          </div>
+        </div>
+      )}
+
       {!loading && athRecords.length > 0 && (
         <div className="flex justify-between items-center text-sm text-muted-foreground pt-4">
           <span>
-            Total ATH records: {athRecords.length}
+            Page {currentPage} of {totalPages}
           </span>
           <span>
             Last updated: {DateUtils.formatDateTime(new Date())}

@@ -53,6 +53,7 @@ export function Navbar({ showSidebar = false }: NavbarProps) {
       section: 'Crypto Data',
       items: [
         { href: '/dashboard/top100', label: 'Top 100', icon: '🏆', requiresAuth: true },
+        { href: '/dashboard/top101-200', label: 'Top 101-200', icon: '🥈', requiresAuth: true },
         { href: '/dashboard/ath-history', label: 'ATH History', icon: '📈', requiresAuth: true },
         { href: '/dashboard/favorites', label: 'Favorites', icon: '⭐', requiresAuth: true },
       ]

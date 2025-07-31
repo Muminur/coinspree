@@ -10,11 +10,17 @@ import { StringUtils, DateUtils } from './utils'
 export class ATHDetector {
   static async runDetection(): Promise<NotificationLog[]> {
     try {
-      // Fetch latest crypto data
-      const currentData = await CoinGecko.getTop100()
+      // Fetch latest crypto data for both ranges
+      console.log('🔍 ATH Detection: Fetching top 200 cryptocurrency data...')
+      const top100Data = await CoinGecko.getTop100()
+      const top101to200Data = await CoinGecko.getTop101to200()
+      
+      // Combine both ranges for comprehensive ATH detection
+      const allData = [...top100Data, ...top101to200Data]
+      console.log(`🔍 ATH Detection: Processing ${allData.length} cryptocurrencies (Top 100: ${top100Data.length}, Top 101-200: ${top101to200Data.length})`)
 
-      // Detect ATH updates
-      const athUpdates = await CoinGecko.detectATHUpdates(currentData)
+      // Detect ATH updates for all cryptocurrencies
+      const athUpdates = await CoinGecko.detectATHUpdates(allData)
 
       // Process notifications for ATH updates
       const notifications: NotificationLog[] = []
@@ -134,10 +140,12 @@ export class ATHDetector {
       const stored = await KV.getCrypto(cryptoId)
       if (!stored) return false
 
-      // Re-fetch from CoinGecko to verify
-      const current = await CoinGecko.getTop100()
+      // Re-fetch from CoinGecko to verify - check both ranges
+      const top100 = await CoinGecko.getTop100()
+      const top101to200 = await CoinGecko.getTop101to200()
+      const current = [...top100, ...top101to200]
+      
       const coin = current.find((c) => c.id === cryptoId)
-
       return coin ? coin.currentPrice >= stored.ath : false
     } catch {
       return false
