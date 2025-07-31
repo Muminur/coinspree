@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 
 export async function POST() {
   try {
     // Require admin authentication
-    const session = await Auth.requireAuth()
-    const user = await KV.getUserById(session.userId)
-    
-    if (!user || user.role !== 'admin') {
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }

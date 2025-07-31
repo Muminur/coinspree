@@ -25,6 +25,9 @@ try {
     exists: () => Promise.resolve(0),
     incr: () => Promise.resolve(1),
     expire: () => Promise.resolve(1),
+    scard: () => Promise.resolve(0),
+    hincrby: () => Promise.resolve(1),
+    hget: () => Promise.resolve(null),
   }
 }
 import type {
@@ -51,6 +54,30 @@ export class KV {
   static ttl = kv.ttl.bind(kv)
   static zrange = kv.zrange.bind(kv)
   static mget = kv.mget.bind(kv)
+  static hset = kv.hset.bind(kv)
+  static zadd = kv.zadd.bind(kv)
+  static zrem = kv.zrem.bind(kv)
+  static lrange = kv.lrange.bind(kv)
+  static lpush = kv.lpush.bind(kv)
+  static lrem = kv.lrem.bind(kv)
+  static exists = kv.exists.bind(kv)
+  static incr = kv.incr.bind(kv)
+  static expire = kv.expire.bind(kv)
+  static scard = kv.scard ? kv.scard.bind(kv) : () => Promise.resolve(0)
+  static hsetall = async (key: string, obj: Record<string, string>) => {
+    const args = Object.entries(obj).flat()
+    return await kv.hset(key, ...args)
+  }
+  static hincrby = kv.hincrby ? kv.hincrby.bind(kv) : async (key: string, field: string, increment: number) => {
+    const current = parseInt(await kv.hget(key, field) || '0')
+    const newValue = current + increment
+    await kv.hset(key, field, newValue.toString())
+    return newValue
+  }
+  static hget = kv.hget ? kv.hget.bind(kv) : async (key: string, field: string) => {
+    const data = await kv.hgetall(key)
+    return data ? data[field] : null
+  }
   // User operations
   static async createUser(user: User): Promise<void> {
     await Promise.all([

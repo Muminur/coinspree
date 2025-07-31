@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 import { adminSubscriptionUpdateSchema } from '@/lib/validations'
 
@@ -9,17 +9,21 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     // Require admin authentication
-    await Auth.requireAdmin()
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
 
-    // Get all users to find their subscriptions
+    // Get all users and their subscription histories (including pending)
     const users = await KV.getAllUsers()
     const subscriptions = []
 
     for (const user of users) {
-      const subscription = await KV.getUserSubscription(user.id)
-      if (subscription) {
+      const userSubscriptions = await KV.getUserSubscriptionHistory(user.id)
+      for (const subscription of userSubscriptions) {
         subscriptions.push({
           ...subscription,
+          userId: user.id, // Ensure userId is set
           user: {
             id: user.id,
             email: user.email,
@@ -29,11 +33,12 @@ export async function GET() {
       }
     }
 
-    // Sort by creation date (newest first)
-    subscriptions.sort(
-      (a, b) =>
-        new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-    )
+    // Sort by creation date (newest first), fallback to startDate if createdAt is missing
+    subscriptions.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt) : new Date(a.startDate)
+      const dateB = b.createdAt ? new Date(b.createdAt) : new Date(b.startDate)
+      return dateB.getTime() - dateA.getTime()
+    })
 
     return NextResponse.json({
       success: true,
@@ -56,7 +61,10 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     // Require admin authentication
-    await Auth.requireAdmin()
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
 
     // Parse request body
     const body = await request.json()

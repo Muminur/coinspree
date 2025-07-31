@@ -137,28 +137,8 @@ export function Footer() {
               <p className="text-sm text-blue-100/60">
                 © {currentYear} CoinSpree. All rights reserved.
               </p>
-              <div className="flex items-center gap-3 text-xs">
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 backdrop-blur-sm border border-white/10">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-300">Live API</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 backdrop-blur-sm border border-white/10">
-                  <span className="text-blue-300">⚡ Vercel</span>
-                </div>
-              </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="text-xs text-blue-100/50">
-                Powered by
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm border border-white/10">
-                <div className="text-sm">🦎</div>
-                <span className="text-sm font-medium bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-                  CoinGecko API
-                </span>
-              </div>
-            </div>
           </div>
           
           {/* Decorative Elements */}

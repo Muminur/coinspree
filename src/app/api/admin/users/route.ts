@@ -1,21 +1,11 @@
-import { NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { withAdminAuth, AuthMiddleware } from '@/lib/auth-middleware'
 import { KV } from '@/lib/kv'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export const GET = withAdminAuth(async (request: NextRequest, auth) => {
   try {
-    // Require admin authentication
-    const session = await Auth.requireAuth()
-    const user = await KV.getUserById(session.userId)
-    
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      )
-    }
 
     // Get all users with enhanced information
     const allUsers = await KV.getAllUsers()
@@ -67,18 +57,14 @@ export async function GET() {
     const sortedUsers = usersWithSubscriptionStatus
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-    return NextResponse.json({
-      success: true,
-      data: sortedUsers,
+    return AuthMiddleware.createSuccessResponse({
+      users: sortedUsers,
       total: sortedUsers.length,
       timestamp: new Date().toISOString()
     })
 
   } catch (error) {
     console.error('Admin users GET error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
-      { status: 500 }
-    )
+    return AuthMiddleware.createErrorResponse(error, 500, 'Failed to fetch users')
   }
-}
+})

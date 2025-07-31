@@ -22,7 +22,8 @@
       "Bash(vercel:*)",
       "Bash(git:*)",
       "Bash(gh:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

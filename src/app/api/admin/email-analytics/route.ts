@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 
 interface EmailAnalytics {
@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
     console.log('📧 Email Analytics: Getting email delivery analytics')
     
     // Verify admin authentication
-    const session = await Auth.requireAuth()
-    if (session.user.role !== 'admin') {
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }

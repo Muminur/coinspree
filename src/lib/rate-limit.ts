@@ -70,3 +70,23 @@ export const passwordResetLimiter = new RateLimit({
   interval: 3600, // 1 hour
   uniqueTokenPerInterval: 3, // 3 reset attempts per hour
 })
+
+export const adminLimiter = new RateLimit({
+  interval: 300, // 5 minutes
+  uniqueTokenPerInterval: process.env.NODE_ENV === 'development' ? 1000 : 20, // 20 admin actions per 5 minutes
+})
+
+export const userProfileLimiter = new RateLimit({
+  interval: 300, // 5 minutes
+  uniqueTokenPerInterval: 10, // 10 profile updates per 5 minutes
+})
+
+export const subscriptionLimiter = new RateLimit({
+  interval: 600, // 10 minutes
+  uniqueTokenPerInterval: 5, // 5 subscription operations per 10 minutes
+})
+
+export const generalApiLimiter = new RateLimit({
+  interval: 60, // 1 minute
+  uniqueTokenPerInterval: process.env.NODE_ENV === 'development' ? 1000 : 100, // 100 API calls per minute
+})

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Auth } from '@/lib/auth'
+import { userProfileLimiter } from '@/lib/rate-limit'
+import { SecurityMiddleware } from '@/lib/security-middleware'
 import { z } from 'zod'
 
 const updateProfileSchema = z.object({
@@ -31,6 +33,15 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Rate limiting for profile updates
+    const rateLimit = await userProfileLimiter.check(request)
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many profile updates. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     const session = await Auth.getCurrentSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -55,7 +66,7 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: false, error: 'Failed to update profile' },
+      { success: false, error: SecurityMiddleware.sanitizeError(error) },
       { status: 500 }
     )
   }

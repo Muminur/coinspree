@@ -4,12 +4,23 @@ import { KV } from '@/lib/kv'
 import { TronPayment } from '@/lib/tron'
 import { StringUtils } from '@/lib/utils'
 import { subscriptionCreateSchema } from '@/lib/validations'
+import { subscriptionLimiter } from '@/lib/rate-limit'
+import { SecurityMiddleware } from '@/lib/security-middleware'
 import type { Subscription } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for subscription operations
+    const rateLimit = await subscriptionLimiter.check(request)
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many subscription requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     // Require authentication
     const user = await Auth.requireAuth()
 
@@ -131,7 +142,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: (error as Error).message,
+        error: SecurityMiddleware.sanitizeError(error),
       },
       { status: 500 }
     )

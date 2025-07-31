@@ -1,22 +1,20 @@
 import { NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 import { SubscriptionLifecycle } from '@/lib/subscription-lifecycle'
 
 export async function POST() {
   try {
     // Require admin authentication
-    const session = await Auth.requireAuth()
-    const user = await KV.getUserById(session.userId)
-    
-    if (!user || user.role !== 'admin') {
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
       )
     }
 
-    console.log(`🔄 Notification sync triggered by admin ${user.email}`)
+    console.log(`🔄 Notification sync triggered by admin ${session.email}`)
     
     // Get user counts before sync
     const allUsers = await KV.getAllUsers()

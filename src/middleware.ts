@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { kv } from '@vercel/kv'
+import { SecurityMiddleware } from './lib/security-middleware'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Security check: Block debug/dev endpoints in production
+  if (SecurityMiddleware.shouldBlockEndpoint(pathname)) {
+    return SecurityMiddleware.createBlockedResponse()
+  }
 
   // Skip middleware for API routes, static files, and auth pages
   if (
@@ -15,7 +21,8 @@ export async function middleware(request: NextRequest) {
     pathname === '/' ||
     pathname === '/unsubscribe'
   ) {
-    return NextResponse.next()
+    const response = NextResponse.next()
+    return SecurityMiddleware.addSecurityHeaders(response)
   }
 
   const sessionId = request.cookies.get('session')?.value
@@ -53,7 +60,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    return NextResponse.next()
+    const response = NextResponse.next()
+    return SecurityMiddleware.addSecurityHeaders(response)
   } catch (error) {
     console.error('Middleware error:', error)
     return NextResponse.redirect(new URL('/login', request.url))

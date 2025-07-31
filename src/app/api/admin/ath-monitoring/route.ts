@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 
 interface ATHDetectionMetrics {
@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
     console.log('🚀 ATH Monitor: Getting ATH detection metrics')
     
     // Verify admin authentication
-    const session = await Auth.requireAuth()
-    if (session.user.role !== 'admin') {
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
     console.log('🚀 ATH Monitor: Recording ATH detection event')
     
     // Verify admin or system authentication
-    const session = await Auth.requireAuth()
-    if (session.user.role !== 'admin') {
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }

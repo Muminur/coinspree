@@ -121,21 +121,24 @@ export default function SubscriptionAnalyticsDashboard() {
     return <Badge variant="danger">Needs Improvement</Badge>
   }
 
-  const getGrowthBadge = (rate: number) => {
-    if (rate > 0) return <Badge variant="success">+{rate.toFixed(1)}%</Badge>
-    if (rate === 0) return <Badge variant="info">0%</Badge>
-    return <Badge variant="danger">{rate.toFixed(1)}%</Badge>
+  const getGrowthBadge = (rate: number | null | undefined) => {
+    const safeRate = rate ?? 0
+    if (safeRate > 0) return <Badge variant="success">+{safeRate.toFixed(1)}%</Badge>
+    if (safeRate === 0) return <Badge variant="info">0%</Badge>
+    return <Badge variant="danger">{safeRate.toFixed(1)}%</Badge>
   }
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null | undefined) => {
+    const safeAmount = amount ?? 0
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount)
+    }).format(safeAmount)
   }
 
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`
+  const formatPercentage = (value: number | null | undefined) => {
+    const safeValue = value ?? 0
+    return `${safeValue.toFixed(1)}%`
   }
 
   if (loading && !analytics) {
@@ -181,14 +184,14 @@ export default function SubscriptionAnalyticsDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             💰 Subscription Analytics Dashboard
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">
             Monitor conversion rates, revenue metrics, and user journey analytics
           </p>
         </div>
@@ -227,7 +230,7 @@ export default function SubscriptionAnalyticsDashboard() {
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700">
           <div className="p-6">
             <div className="flex items-center justify-between">
@@ -320,7 +323,7 @@ export default function SubscriptionAnalyticsDashboard() {
             <span className="text-2xl mr-2">📊</span>
             Recent Subscription Activity
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="text-center">
               <p className="text-3xl font-bold text-blue-600">
                 {analytics.conversionMetrics.newSubscriptionsToday}
@@ -350,7 +353,7 @@ export default function SubscriptionAnalyticsDashboard() {
             <span className="text-2xl mr-2">💸</span>
             Revenue Analytics
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Revenue</p>
               <p className="text-2xl font-bold text-green-600">
@@ -372,7 +375,7 @@ export default function SubscriptionAnalyticsDashboard() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Growth Rate</p>
               <p className="text-2xl font-bold text-orange-600">
-                +{analytics.revenueMetrics.revenueGrowthRate.toFixed(1)}%
+                +{(analytics.revenueMetrics.revenueGrowthRate ?? 0).toFixed(1)}%
               </p>
             </div>
           </div>
@@ -427,7 +430,7 @@ export default function SubscriptionAnalyticsDashboard() {
             <span className="text-2xl mr-2">💳</span>
             Payment Analysis
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <h4 className="font-medium mb-3">Payment Status Distribution</h4>
               <div className="space-y-2">
@@ -508,7 +511,7 @@ export default function SubscriptionAnalyticsDashboard() {
               <span className="text-2xl mr-2">📊</span>
               Monthly Growth Trends
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {analytics.trends.monthlyGrowth.slice(-6).map((month, index) => (
                 <div key={index} className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{month.month}</p>

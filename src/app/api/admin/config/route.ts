@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 import { z } from 'zod'
 
@@ -19,10 +19,9 @@ const ConfigSchema = z.object({
 export async function GET() {
   try {
     // Require admin authentication
-    const session = await Auth.requireAuth()
-    const user = await KV.getUserById(session.userId)
+    const session = await validateServerSession()
     
-    if (!user || user.role !== 'admin') {
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -61,10 +60,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     // Require admin authentication
-    const session = await Auth.requireAuth()
-    const user = await KV.getUserById(session.userId)
+    const session = await validateServerSession()
     
-    if (!user || user.role !== 'admin') {
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }

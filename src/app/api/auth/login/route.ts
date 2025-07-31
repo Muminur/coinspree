@@ -3,6 +3,7 @@ import { ZodError } from 'zod'
 import { Auth } from '@/lib/auth'
 import { loginSchema } from '@/lib/validations'
 import { authLimiter } from '@/lib/rate-limit'
+import { SecurityMiddleware } from '@/lib/security-middleware'
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,9 +41,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Handle authentication errors
+    // Handle authentication errors with sanitized messages
+    const sanitizedError = SecurityMiddleware.sanitizeError(error)
     return NextResponse.json(
-      { success: false, error: (error as Error).message },
+      { success: false, error: sanitizedError === 'An error occurred. Please try again' ? 'Invalid credentials' : sanitizedError },
       { status: 400 }
     )
   }

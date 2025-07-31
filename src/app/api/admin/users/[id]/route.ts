@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
+import { SecurityMiddleware } from '@/lib/security-middleware'
+import { adminLimiter } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const UpdateUserSchema = z.object({
@@ -15,8 +17,23 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Rate limiting for admin operations
+    const rateLimit = await adminLimiter.check(request)
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many admin operations. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     // Require admin authentication
-    const session = await Auth.requireAuth()
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      )
+    }
     const adminUser = await KV.getUserById(session.userId)
     
     if (!adminUser || adminUser.role !== 'admin') {
@@ -72,6 +89,9 @@ export async function PUT(
       }
     }
 
+    // Check if role is changing (privilege escalation/demotion)
+    const roleChanged = updateData.role !== targetUser.role
+    
     // Update user data
     const updatedUser = {
       ...targetUser,
@@ -82,6 +102,13 @@ export async function PUT(
     }
 
     await KV.updateUser(userId, updatedUser)
+    
+    // Regenerate session if role changed for security
+    if (roleChanged) {
+      const { Auth } = await import('@/lib/auth')
+      await Auth.regenerateSession(userId)
+      console.log(`Session regenerated for user ${userId} due to role change: ${targetUser.role} -> ${updateData.role}`)
+    }
 
     return NextResponse.json({
       success: true,
@@ -98,7 +125,7 @@ export async function PUT(
   } catch (error) {
     console.error('Admin user PUT error:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to update user' },
+      { success: false, error: SecurityMiddleware.sanitizeError(error) },
       { status: 500 }
     )
   }
@@ -109,8 +136,23 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Rate limiting for admin operations
+    const rateLimit = await adminLimiter.check(request)
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many admin operations. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     // Require admin authentication
-    const session = await Auth.requireAuth()
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      )
+    }
     const adminUser = await KV.getUserById(session.userId)
     
     if (!adminUser || adminUser.role !== 'admin') {
@@ -156,7 +198,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Admin user DELETE error:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to delete user' },
+      { success: false, error: SecurityMiddleware.sanitizeError(error) },
       { status: 500 }
     )
   }

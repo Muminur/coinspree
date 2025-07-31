@@ -90,7 +90,7 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow animate-pulse">
               <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
         <StatsCard
           title="Total Users"
           value={stats?.totalUsers?.toString() || '0'}
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <StatsCard
           title="ATH Detections (24h)"
           value={stats?.athDetections24h?.toString() || '0'}
@@ -173,14 +173,14 @@ export default function AdminDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Quick Actions */}
         <Card>
           <CardHeader
             title="Quick Actions"
             description="Common administrative tasks"
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link href="/admin/users">
               <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12">
                 👥 Manage Users
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
           title="System Status"
           description="Current system health and performance metrics"
         />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="text-center">
             <div className="text-green-500 text-3xl mb-2">✅</div>
             <h3 className="font-semibold text-gray-900 dark:text-white">API Status</h3>

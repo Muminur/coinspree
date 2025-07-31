@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 
 export const dynamic = 'force-dynamic'
@@ -9,14 +9,11 @@ export async function GET() {
     console.log('🔍 Admin Analytics: Starting analytics request')
     
     // Require admin authentication
-    const session = await Auth.requireAuth()
+    const session = await validateServerSession()
     console.log('✅ Admin Analytics: Authentication passed')
     
-    const user = await KV.getUserById(session.userId)
-    console.log('✅ Admin Analytics: User retrieved:', user?.email)
-    
-    if (!user || user.role !== 'admin') {
-      console.log('❌ Admin Analytics: Access denied - user role:', user?.role)
+    if (!session || session.role !== 'admin') {
+      console.log('❌ Admin Analytics: Access denied - user role:', session?.role)
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }

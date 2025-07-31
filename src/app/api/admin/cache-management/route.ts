@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { Cache } from '@/lib/cache'
 import { OptimizedQueries } from '@/lib/optimized-queries'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
+    const session = await validateServerSession()
     
     if (!session || session.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
@@ -136,7 +136,7 @@ async function getCacheHealth() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
+    const session = await validateServerSession()
     
     if (!session || session.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })

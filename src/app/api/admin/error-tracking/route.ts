@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 
 interface ErrorLog {
@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
     console.log('🐛 Error Tracking: Getting error analytics')
     
     // Verify admin authentication
-    const session = await Auth.requireAuth()
-    if (session.user.role !== 'admin') {
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -186,8 +186,8 @@ export async function PATCH(request: NextRequest) {
     console.log('🐛 Error Tracking: Updating error status')
     
     // Verify admin authentication
-    const session = await Auth.requireAuth()
-    if (session.user.role !== 'admin') {
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -205,7 +205,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update error resolution status
-    await updateErrorResolution(errorId, resolved, session.user.email, resolveNotes)
+    await updateErrorResolution(errorId, resolved, session.email, resolveNotes)
 
     console.log(`✅ Error Tracking: Updated error ${errorId} resolution status`)
     

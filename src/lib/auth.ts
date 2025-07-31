@@ -70,6 +70,23 @@ export class Auth {
     })
   }
 
+  static async regenerateSession(userId: string): Promise<void> {
+    // Get current session
+    const currentSessionId = cookies().get('session')?.value
+    
+    if (currentSessionId) {
+      // Delete old session
+      await KV.deleteSession(currentSessionId)
+    }
+    
+    // Create new session
+    const user = await KV.getUserById(userId)
+    if (user) {
+      const { passwordHash: _, ...safeUser } = user
+      await this.createSession(safeUser)
+    }
+  }
+
   static async getSession(): Promise<AuthSession | null> {
     const sessionId = cookies().get('session')?.value
     if (!sessionId) return null

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 
 export const dynamic = 'force-dynamic'
@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     // Require admin authentication
-    const user = await Auth.requireAuth()
-    if (user.role !== 'admin') {
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }

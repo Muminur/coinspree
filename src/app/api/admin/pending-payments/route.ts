@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Auth } from '@/lib/auth'
+import { validateServerSession } from '@/lib/auth'
 import { KV } from '@/lib/kv'
 import { z } from 'zod'
 
@@ -11,7 +11,13 @@ export async function GET() {
     console.log('🔍 Admin: Fetching pending payments')
     
     // Require admin authentication
-    await Auth.requireAdmin()
+    const session = await validateServerSession()
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      )
+    }
 
     // Get all pending subscriptions
     const pendingSubscriptions = await KV.getPendingSubscriptions()

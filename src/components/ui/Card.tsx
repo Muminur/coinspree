@@ -12,7 +12,7 @@ export function Card({ children, className, padding = true }: CardProps) {
     <div
       className={cn(
         'crypto-card',
-        padding && 'p-6',
+        padding && 'p-4 sm:p-6',
         className
       )}
     >
@@ -103,26 +103,26 @@ export function StatsCard({
   description,
 }: StatsCardProps) {
   return (
-    <Card className={cn('text-center', className)}>
+    <Card className={cn('text-center p-4 sm:p-6', className)}>
       {icon && (
-        <div className="text-3xl mb-2 text-primary">
+        <div className="text-2xl sm:text-3xl mb-2 text-primary">
           {typeof icon === 'string' ? icon : icon}
         </div>
       )}
-      <h3 className="text-sm font-medium text-muted-foreground mb-1">
+      <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">
         {title}
       </h3>
-      <div className="text-2xl font-bold text-foreground mb-2">
+      <div className="text-lg sm:text-2xl font-bold text-foreground mb-2">
         {value}
       </div>
       {trend && (
-        <div className="text-sm font-medium text-green-600">
+        <div className="text-xs sm:text-sm font-medium text-green-600">
           {trend}
         </div>
       )}
       {change !== undefined && (
         <div className={cn(
-          'text-sm font-medium',
+          'text-xs sm:text-sm font-medium',
           change >= 0 ? 'text-green-600' : 'text-red-600'
         )}>
           {change >= 0 ? '+' : ''}{(change || 0).toFixed(2)}%

@@ -160,33 +160,33 @@ export default function MonitoringDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🔧 Performance Monitoring</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">🔧 Performance Monitoring</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">
             Real-time system health and performance metrics
           </p>
           {lastUpdated && (
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-500 mt-1">
               Last updated: {lastUpdated.toLocaleTimeString()}
             </p>
           )}
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={autoRefresh 
+            className={`${autoRefresh 
               ? 'bg-green-600 hover:bg-green-700 text-white' 
               : 'bg-gray-600 hover:bg-gray-700 text-white'
-            }
+            } text-sm px-3 py-2`}
           >
             {autoRefresh ? '🔄 Auto-Refresh ON' : '⏸️ Auto-Refresh OFF'}
           </Button>
           <Button
             onClick={fetchHealthData}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-2"
           >
             🔄 Refresh Now
           </Button>
@@ -207,7 +207,7 @@ export default function MonitoringDashboard() {
       )}
 
       {/* System Status Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
@@ -290,7 +290,7 @@ export default function MonitoringDashboard() {
       </div>
 
       {/* Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6">
         <StatsCard
           title="Server Response"
           value={`${healthData?.performance.serverResponseTime || 0}ms`}
@@ -323,7 +323,7 @@ export default function MonitoringDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* User Engagement Metrics */}
         <Card>
           <CardHeader
@@ -331,7 +331,7 @@ export default function MonitoringDashboard() {
             description="Real-time user activity and conversion metrics"
           />
           <div className="p-6 pt-0 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {healthData?.userEngagement.activeUsers24h || 0}
@@ -370,7 +370,7 @@ export default function MonitoringDashboard() {
             description="All-Time High detection system metrics"
           />
           <div className="p-6 pt-0 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {healthData?.athDetection.detections24h || 0}
@@ -414,7 +414,7 @@ export default function MonitoringDashboard() {
           title="📧 Email Service Performance"
           description="Email delivery metrics and service health"
         />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="text-center p-4">
             <div className="text-3xl font-bold text-green-600 mb-2">
               {healthData?.emailService.deliveryRate || 0}%
@@ -455,7 +455,7 @@ export default function MonitoringDashboard() {
           title="🚨 System Alerts"
           description="Active alerts and system notifications"
         />
-        <div className="space-y-3 max-h-80 overflow-y-auto">
+        <div className="space-y-3 max-h-60 sm:max-h-80 overflow-y-auto">
           {healthData?.alerts && healthData.alerts.length > 0 ? (
             healthData.alerts.map((alert) => (
               <div key={alert.id} className={`p-4 rounded-lg border ${getAlertColor(alert.level)}`}>
