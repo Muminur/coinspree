@@ -17,12 +17,8 @@
   },
   "crons": [
     {
-      "path": "/api/cron/ath-detection",
-      "schedule": "* * * * *"
-    },
-    {
       "path": "/api/cron/health-check",
-      "schedule": "0 */1 * * *"
+      "schedule": "0 0 * * *"
     }
   ],
   "headers": [
