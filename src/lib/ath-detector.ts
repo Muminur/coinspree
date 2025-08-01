@@ -262,7 +262,7 @@ export class ATHDetector {
       const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000)
       const detectionKeys = await KV.keys('ath:detection:*')
       
-      const recentDetections = detectionKeys.filter(key => {
+      const recentDetections = detectionKeys.filter((key: string) => {
         const timestamp = parseInt(key.split(':')[2])
         return timestamp >= oneDayAgo
       })

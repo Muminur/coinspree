@@ -12,8 +12,8 @@
  */
 
 export async function register() {
-  // Only run background jobs in production
-  if (process.env.NODE_ENV === 'production') {
+  // Run background jobs in production and development
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
     console.log('🚀 Instrumentation: Starting in production mode')
     
     // Set start time for monitoring

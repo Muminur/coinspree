@@ -1,5 +1,6 @@
 import { KV } from './kv'
-import { sendATHNotificationEmail, emailQueue } from './email'
+import { sendATHNotificationEmail } from './email'
+import { EmailQueue } from './email-queue'
 import type {
   User,
   CryptoAsset,
@@ -56,7 +57,11 @@ export class NotificationService {
         await Promise.allSettled(
           batch.map(async (user) => {
             try {
-              await emailQueue.addATHNotification(user, notificationData)
+              await EmailQueue.addToQueue('ath_notification', user, {
+                cryptoAsset: coin,
+                newATH: notificationData.newATH,
+                previousATH: notificationData.previousATH
+              })
               successCount++
 
               // Log individual notification

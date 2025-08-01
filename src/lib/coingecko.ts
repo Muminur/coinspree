@@ -29,6 +29,7 @@ export class CoinGecko {
   private static readonly MAX_FAILURES = 3
   private static circuitBreakerOpen = false
   private static circuitBreakerOpenUntil = 0
+  private static currentAPIKeyIndex = 0
 
   static async getTop100(): Promise<CryptoAsset[]> {
     // Check cache first
@@ -88,6 +89,22 @@ export class CoinGecko {
     } catch {
       return null
     }
+  }
+
+  private static getNextAPIKey(): string | null {
+    const apiKeys = [
+      process.env.COINGECKO_API_KEY,
+      process.env.COINGECKO_API_KEY_2,
+      process.env.COINGECKO_API_KEY_3
+    ].filter(Boolean) as string[]
+
+    if (apiKeys.length === 0) return null
+
+    const apiKey = apiKeys[this.currentAPIKeyIndex % apiKeys.length]
+    this.currentAPIKeyIndex = (this.currentAPIKeyIndex + 1) % apiKeys.length
+    
+    console.log(`🔑 Using CoinGecko API key ${this.currentAPIKeyIndex}/${apiKeys.length}`)
+    return apiKey
   }
 
   private static async enforceRateLimit(): Promise<void> {
@@ -150,8 +167,10 @@ export class CoinGecko {
         Accept: 'application/json',
       }
 
-      if (process.env.COINGECKO_API_KEY) {
-        headers['x-cg-demo-api-key'] = process.env.COINGECKO_API_KEY
+      // Use multiple API keys for better rate limiting
+      const apiKey = this.getNextAPIKey()
+      if (apiKey) {
+        headers['x-cg-demo-api-key'] = apiKey
       }
 
       const response = await fetch(url, { 
@@ -213,8 +232,10 @@ export class CoinGecko {
       Accept: 'application/json',
     }
 
-    if (process.env.COINGECKO_API_KEY) {
-      headers['x-cg-demo-api-key'] = process.env.COINGECKO_API_KEY
+    // Use multiple API keys for better rate limiting
+    const apiKey = this.getNextAPIKey()
+    if (apiKey) {
+      headers['x-cg-demo-api-key'] = apiKey
     }
 
     const response = await fetch(url, { headers })
