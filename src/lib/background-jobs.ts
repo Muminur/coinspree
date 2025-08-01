@@ -192,7 +192,9 @@ export class BackgroundJobs {
           const alreadySent = await KV.get(emailKey)
           
           if (!alreadySent) {
-            await sendSubscriptionExpiryEmail(user, subscription, emailType)
+            // Calculate days until expiry for the email function
+            const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+            await sendSubscriptionExpiryEmail(user, daysUntilExpiry)
             await KV.set(emailKey, '1')
             await KV.expire(emailKey, 24 * 60 * 60) // Expire after 24 hours
             

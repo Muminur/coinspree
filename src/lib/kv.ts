@@ -28,6 +28,7 @@ try {
     scard: () => Promise.resolve(0),
     hincrby: () => Promise.resolve(1),
     hget: () => Promise.resolve(null),
+    zcard: () => Promise.resolve(0),
   }
 }
 import type {
@@ -64,6 +65,7 @@ export class KV {
   static incr = kv.incr.bind(kv)
   static expire = kv.expire.bind(kv)
   static scard = kv.scard ? kv.scard.bind(kv) : () => Promise.resolve(0)
+  static zcard = kv.zcard ? kv.zcard.bind(kv) : () => Promise.resolve(0)
   static hsetall = async (key: string, obj: Record<string, string>) => {
     const args = Object.entries(obj).flat()
     return await kv.hset(key, ...args)

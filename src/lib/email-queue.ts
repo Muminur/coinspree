@@ -125,7 +125,7 @@ export class EmailQueue {
       }
 
       // Get remaining queue size
-      const remaining = await KV.zcard?.(this.QUEUE_KEY) || 0
+      const remaining = await KV.zcard(this.QUEUE_KEY) || 0
 
       return { processed, sent, failed, remaining }
 
@@ -145,12 +145,16 @@ export class EmailQueue {
     try {
       switch (queuedEmail.type) {
         case 'ath_notification':
-          await sendATHNotificationEmail(
-            queuedEmail.recipient,
-            queuedEmail.data.cryptoAsset,
-            queuedEmail.data.newATH,
-            queuedEmail.data.previousATH
-          )
+          // Construct the notification data object
+          const notificationData = {
+            cryptoName: queuedEmail.data.cryptoAsset.name,
+            symbol: queuedEmail.data.cryptoAsset.symbol,
+            newATH: queuedEmail.data.newATH,
+            previousATH: queuedEmail.data.previousATH,
+            percentageIncrease: ((queuedEmail.data.newATH - queuedEmail.data.previousATH) / queuedEmail.data.previousATH) * 100,
+            athDate: new Date().toISOString()
+          }
+          await sendATHNotificationEmail(queuedEmail.recipient, notificationData)
           break
 
         case 'welcome':
@@ -158,11 +162,11 @@ export class EmailQueue {
           break
 
         case 'subscription_expiry':
-          await sendSubscriptionExpiryEmail(
-            queuedEmail.recipient,
-            queuedEmail.data.subscription,
-            queuedEmail.data.warningType
-          )
+          // Calculate days until expiry from subscription data
+          const endDate = new Date(queuedEmail.data.subscription.endDate)
+          const now = new Date()
+          const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+          await sendSubscriptionExpiryEmail(queuedEmail.recipient, daysUntilExpiry)
           break
 
         case 'password_reset':
@@ -194,9 +198,9 @@ export class EmailQueue {
     failed: number
   }> {
     const [pending, processing, failed] = await Promise.all([
-      KV.zcard?.(this.QUEUE_KEY) || 0,
-      KV.scard?.(this.PROCESSING_KEY) || 0,
-      KV.keys?.('email:failed:*').then(keys => keys?.length || 0) || 0
+      KV.zcard(this.QUEUE_KEY) || 0,
+      KV.scard(this.PROCESSING_KEY) || 0,
+      KV.keys('email:failed:*').then(keys => keys?.length || 0) || 0
     ])
 
     return { pending, processing, failed }
