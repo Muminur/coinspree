@@ -145,19 +145,18 @@ export function ATHHistoryTable() {
     
     return (
       <TableHeaderCell 
-        className={`cursor-pointer hover:bg-gray-50 select-none ${className} ${isActive ? 'bg-blue-50' : ''}`}
-        onClick={() => handleSortChange(field)}
+        sortable={true}
+        onSort={() => handleSortChange(field)}
+        className={`select-none ${className} ${isActive ? 'bg-blue-50' : ''}`}
       >
-        <div className="flex items-center gap-2">
-          {children}
-          <div className="flex flex-col">
-            <span className={`text-xs leading-none ${direction === 'asc' && isActive ? 'text-blue-600' : 'text-gray-300'}`}>
-              ▲
-            </span>
-            <span className={`text-xs leading-none ${direction === 'desc' && isActive ? 'text-blue-600' : 'text-gray-300'}`}>
-              ▼
-            </span>
-          </div>
+        {children}
+        <div className="flex flex-col ml-1">
+          <span className={`text-xs leading-none ${direction === 'asc' && isActive ? 'text-blue-600' : 'text-gray-300'}`}>
+            ▲
+          </span>
+          <span className={`text-xs leading-none ${direction === 'desc' && isActive ? 'text-blue-600' : 'text-gray-300'}`}>
+            ▼
+          </span>
         </div>
       </TableHeaderCell>
     )
