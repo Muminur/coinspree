@@ -60,16 +60,10 @@ export class NotificationService {
               await EmailQueue.addToQueue('ath_notification', user, {
                 cryptoAsset: coin,
                 newATH: notificationData.newATH,
-                previousATH: notificationData.previousATH
+                previousATH: notificationData.previousATH,
+                notificationId: notificationLog.id
               })
               successCount++
-
-              // Log individual notification
-              await this.logUserNotification(
-                user.id,
-                notificationLog.id,
-                coin.id
-              )
             } catch (error) {
               const errorMsg = `Failed to queue notification for ${user.email}: ${error}`
               errors.push(errorMsg)

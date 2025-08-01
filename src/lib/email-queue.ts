@@ -1,5 +1,6 @@
 import { KV } from './kv'
 import { sendATHNotificationEmail, sendWelcomeEmail, sendSubscriptionExpiryEmail, sendPasswordResetEmail } from './email'
+import { DateUtils } from './utils'
 
 interface QueuedEmail {
   id: string
@@ -154,7 +155,20 @@ export class EmailQueue {
             percentageIncrease: ((queuedEmail.data.newATH - queuedEmail.data.previousATH) / queuedEmail.data.previousATH) * 100,
             athDate: new Date().toISOString()
           }
+          
+          // Send the email
           await sendATHNotificationEmail(queuedEmail.recipient, notificationData)
+          
+          // Log individual user notification after successful email delivery
+          if (queuedEmail.data.notificationId) {
+            const logEntry = {
+              userId: queuedEmail.recipient.id,
+              notificationId: queuedEmail.data.notificationId,
+              cryptoId: queuedEmail.data.cryptoAsset.id,
+              sentAt: DateUtils.getCurrentISOString(),
+            }
+            await KV.saveUserNotificationLog(queuedEmail.recipient.id, logEntry)
+          }
           break
 
         case 'welcome':
