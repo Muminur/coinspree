@@ -60,8 +60,8 @@ export function NotificationPreferences({
       
       // Set subscription data
       setSubscription({
-        hasActiveSubscription: subscriptionResult.success && subscriptionResult.data?.subscription?.status === 'active',
-        subscription: subscriptionResult.data?.subscription
+        hasActiveSubscription: subscriptionResult.success && subscriptionResult.data?.isActive === true,
+        subscription: subscriptionResult.data
       })
     } catch (err) {
       setError(
