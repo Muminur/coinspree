@@ -31,15 +31,17 @@ export class NotificationService {
         return { success: true, recipientCount: 0, errors: [] }
       }
 
-      // Prepare notification data
+      // Prepare notification data - use the actual ATH price that was detected
+      // For missed ATHs, this would be coin.ath, for real-time ATHs, this would be coin.currentPrice
+      const actualATHPrice = coin.ath > coin.currentPrice ? coin.ath : coin.currentPrice
+      
       const notificationData: ATHNotificationData = {
         cryptoName: coin.name,
         symbol: coin.symbol,
-        newATH: coin.currentPrice,
+        newATH: actualATHPrice,
         previousATH,
-        percentageIncrease:
-          ((coin.currentPrice - previousATH) / previousATH) * 100,
-        athDate: coin.lastUpdated,
+        percentageIncrease: ((actualATHPrice - previousATH) / previousATH) * 100,
+        athDate: coin.athDate || coin.lastUpdated, // Use ATH date when available
       }
 
       // Send notifications (using queue for better performance)

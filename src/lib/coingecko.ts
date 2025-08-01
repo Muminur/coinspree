@@ -21,6 +21,14 @@ export class CoinGecko {
   private static readonly CACHE_KEY_TOP200 = 'coingecko:top200'
   private static readonly CACHE_KEY_101_200 = 'coingecko:101-200'
   private static readonly CACHE_DURATION = 60 // 1 minute
+  
+  // Rate limiting and circuit breaker
+  private static lastAPICall = 0
+  private static readonly MIN_API_INTERVAL = 2000 // 2 seconds between calls (30 calls/min = 2s interval)
+  private static failureCount = 0
+  private static readonly MAX_FAILURES = 3
+  private static circuitBreakerOpen = false
+  private static circuitBreakerOpenUntil = 0
 
   static async getTop100(): Promise<CryptoAsset[]> {
     // Check cache first
@@ -82,33 +90,90 @@ export class CoinGecko {
     }
   }
 
+  private static async enforceRateLimit(): Promise<void> {
+    // Check circuit breaker
+    if (this.circuitBreakerOpen) {
+      if (Date.now() < this.circuitBreakerOpenUntil) {
+        throw new Error(`Circuit breaker open until ${new Date(this.circuitBreakerOpenUntil).toISOString()}`)
+      } else {
+        // Reset circuit breaker
+        this.circuitBreakerOpen = false
+        this.failureCount = 0
+        console.log('🔄 Circuit breaker reset - attempting API call')
+      }
+    }
+
+    // Enforce rate limiting
+    const timeSinceLastCall = Date.now() - this.lastAPICall
+    if (timeSinceLastCall < this.MIN_API_INTERVAL) {
+      const waitTime = this.MIN_API_INTERVAL - timeSinceLastCall
+      console.log(`⏱️ Rate limiting: waiting ${waitTime}ms before next API call`)
+      await new Promise(resolve => setTimeout(resolve, waitTime))
+    }
+    
+    this.lastAPICall = Date.now()
+  }
+
+  private static recordSuccess(): void {
+    this.failureCount = 0
+    if (this.circuitBreakerOpen) {
+      console.log('✅ API call successful - circuit breaker remains closed')
+    }
+  }
+
+  private static recordFailure(error: Error): void {
+    this.failureCount++
+    console.warn(`⚠️ API call failed (${this.failureCount}/${this.MAX_FAILURES}): ${error.message}`)
+    
+    if (this.failureCount >= this.MAX_FAILURES) {
+      this.circuitBreakerOpen = true
+      this.circuitBreakerOpenUntil = Date.now() + (5 * 60 * 1000) // 5 minutes
+      console.error(`🚨 Circuit breaker opened until ${new Date(this.circuitBreakerOpenUntil).toISOString()}`)
+    }
+  }
+
   private static async fetchFromAPI(): Promise<CryptoAsset[]> {
-    const params = new URLSearchParams({
-      vs_currency: 'usd',
-      order: 'market_cap_desc',
-      per_page: '100',
-      page: '1',
-      sparkline: 'false',
-      price_change_percentage: '24h',
-    })
+    try {
+      await this.enforceRateLimit()
+      
+      const params = new URLSearchParams({
+        vs_currency: 'usd',
+        order: 'market_cap_desc',
+        per_page: '100',
+        page: '1',
+        sparkline: 'false',
+        price_change_percentage: '24h',
+      })
 
-    const url = `${this.BASE_URL}/coins/markets?${params}`
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
+      const url = `${this.BASE_URL}/coins/markets?${params}`
+      const headers: Record<string, string> = {
+        Accept: 'application/json',
+      }
+
+      if (process.env.COINGECKO_API_KEY) {
+        headers['x-cg-demo-api-key'] = process.env.COINGECKO_API_KEY
+      }
+
+      const response = await fetch(url, { 
+        headers,
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      })
+
+      if (!response.ok) {
+        const error = new Error(`CoinGecko API error: ${response.status} ${response.statusText}`)
+        this.recordFailure(error)
+        throw error
+      }
+
+      const data: CoinGeckoResponse[] = await response.json()
+      this.recordSuccess()
+      return data.map(this.transformCoinData)
+    } catch (error) {
+      if (error instanceof Error) {
+        this.recordFailure(error)
+      }
+      throw error
     }
-
-    if (process.env.COINGECKO_API_KEY) {
-      headers['x-cg-demo-api-key'] = process.env.COINGECKO_API_KEY
-    }
-
-    const response = await fetch(url, { headers })
-
-    if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.status}`)
-    }
-
-    const data: CoinGeckoResponse[] = await response.json()
-    return data.map(this.transformCoinData)
   }
 
   private static async fetchTop200FromAPI(): Promise<CryptoAsset[]> {
@@ -222,42 +287,57 @@ export class CoinGecko {
             previousATH: 0
           })
         }
-      } else if (coin.currentPrice > previousATH) {
-        // True new ATH detected by current price - capture previous ATH before updating
-        athUpdates.push({
-          ...coin,
-          previousATH
-        })
-        
-        await KV.updateCrypto(coin.id, {
-          ...coin,
-          ath: coin.currentPrice,
-          // Use current timestamp since this is a newly detected ATH
-          athDate: new Date().toISOString(),
-        })
       } else {
-        // Check if CoinGecko's ATH data is newer than what we have stored
-        if (coin.ath > previousATH) {
+        // Compare with both current price and CoinGecko's reported ATH
+        const realTimeATH = coin.currentPrice > previousATH
+        const missedATH = coin.ath > previousATH
+        
+        if (realTimeATH) {
+          // Real-time ATH detected by current price
+          console.log(`🚀 REAL-TIME ATH DETECTED for ${coin.symbol}: $${coin.currentPrice} (was $${previousATH})`)
+          
+          athUpdates.push({
+            ...coin,
+            previousATH
+          })
+          
+          await KV.updateCrypto(coin.id, {
+            ...coin,
+            ath: coin.currentPrice,
+            athDate: new Date().toISOString(), // Use current timestamp for real-time detection
+          })
+        } else if (missedATH) {
           // CoinGecko has a higher ATH than we have stored - this is a missed ATH!
           console.log(`🚨 MISSED ATH DETECTED for ${coin.symbol}!`)
           console.log(`  Current Price: $${coin.currentPrice}`)
           console.log(`  CoinGecko ATH: $${coin.ath} (${coin.athDate})`)
           console.log(`  Our Stored ATH: $${previousATH} (${stored.athDate})`)
           
-          // This is a new ATH that we missed - add it to notifications
-          athUpdates.push({
-            ...coin,
-            previousATH
-          })
-          
-          // Update our records with CoinGecko's ATH data
-          await KV.updateCrypto(coin.id, {
-            ...coin,
-            ath: coin.ath,
-            athDate: coin.athDate, // Use CoinGecko's ATH date for their detected ATH
-          })
+          // Validate that CoinGecko's ATH is reasonable (not more than 10x current price)
+          const athRatio = coin.ath / coin.currentPrice
+          if (athRatio <= 10) {
+            athUpdates.push({
+              ...coin,
+              previousATH
+            })
+            
+            // Update our records with CoinGecko's ATH data
+            await KV.updateCrypto(coin.id, {
+              ...coin,
+              ath: coin.ath,
+              athDate: coin.athDate, // Use CoinGecko's ATH date
+            })
+          } else {
+            console.warn(`⚠️ Suspicious ATH ratio for ${coin.symbol}: ${athRatio.toFixed(2)}x - skipping`)
+            // Regular update without ATH change
+            await KV.updateCrypto(coin.id, {
+              ...coin,
+              ath: stored.ath,
+              athDate: stored.athDate,
+            })
+          }
         } else {
-          // Regular update - keep existing ATH data, update other fields
+          // Regular update - no ATH detected, keep existing ATH data
           await KV.updateCrypto(coin.id, {
             ...coin,
             ath: stored.ath, // Preserve our stored ATH
