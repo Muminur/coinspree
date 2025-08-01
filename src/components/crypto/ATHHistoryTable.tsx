@@ -29,20 +29,26 @@ export function ATHHistoryTable() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalRecords, setTotalRecords] = useState(0)
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<'marketCapRank' | 'athDate'>('marketCapRank')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
     fetchATHHistory()
-  }, [currentPage, pageSize])
+  }, [currentPage, pageSize, sortField, sortDirection])
 
   const fetchATHHistory = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      // Add pagination parameters to the API call
+      // Add pagination and sorting parameters to the API call
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: pageSize.toString(),
+        sortBy: sortField,
+        sortOrder: sortDirection,
       })
       
       const response = await fetch(`/api/crypto/ath-history?${params}`, {
@@ -116,6 +122,47 @@ export function ATHHistoryTable() {
     setCurrentPage(1) // Reset to first page when changing page size
   }
 
+  const handleSortChange = (field: 'marketCapRank' | 'athDate') => {
+    if (sortField === field) {
+      // Same field clicked - toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      // Different field clicked - set new field with appropriate default direction
+      setSortField(field)
+      setSortDirection(field === 'athDate' ? 'desc' : 'asc') // ATH Date defaults to newest first
+    }
+    setCurrentPage(1) // Reset to first page when sorting changes
+  }
+
+  // Sortable header component
+  const SortableHeader = ({ field, children, className = "" }: { 
+    field: 'marketCapRank' | 'athDate'
+    children: React.ReactNode
+    className?: string 
+  }) => {
+    const isActive = sortField === field
+    const direction = isActive ? sortDirection : null
+    
+    return (
+      <TableHeaderCell 
+        className={`cursor-pointer hover:bg-gray-50 select-none ${className} ${isActive ? 'bg-blue-50' : ''}`}
+        onClick={() => handleSortChange(field)}
+      >
+        <div className="flex items-center gap-2">
+          {children}
+          <div className="flex flex-col">
+            <span className={`text-xs leading-none ${direction === 'asc' && isActive ? 'text-blue-600' : 'text-gray-300'}`}>
+              ▲
+            </span>
+            <span className={`text-xs leading-none ${direction === 'desc' && isActive ? 'text-blue-600' : 'text-gray-300'}`}>
+              ▼
+            </span>
+          </div>
+        </div>
+      </TableHeaderCell>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -152,7 +199,9 @@ export function ATHHistoryTable() {
             <TableHeaderCell>Cryptocurrency</TableHeaderCell>
             <TableHeaderCell>Current Price</TableHeaderCell>
             <TableHeaderCell>All-Time High</TableHeaderCell>
-            <TableHeaderCell>ATH Date</TableHeaderCell>
+            <SortableHeader field="athDate">
+              ATH Date
+            </SortableHeader>
             <TableHeaderCell>24h Trading Volume</TableHeaderCell>
           </TableRow>
         </TableHeader>

@@ -7,14 +7,22 @@ export async function GET(request: NextRequest) {
     // Require authentication
     await Auth.requireAuth()
 
-    // Extract pagination parameters from URL
+    // Extract pagination and sorting parameters from URL
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '25')
+    const sortBy = searchParams.get('sortBy') || 'marketCapRank'
+    const sortOrder = searchParams.get('sortOrder') || 'asc'
     
     // Validate pagination parameters
     const currentPage = Math.max(1, page)
     const pageSize = Math.min(Math.max(1, limit), 100) // Max 100 per page
+    
+    // Validate sorting parameters
+    const validSortFields = ['marketCapRank', 'athDate']
+    const validSortOrders = ['asc', 'desc']
+    const finalSortBy = validSortFields.includes(sortBy) ? sortBy : 'marketCapRank'
+    const finalSortOrder = validSortOrders.includes(sortOrder) ? sortOrder : 'asc'
 
     // Fetch all current crypto data from CoinGecko (both ranges for comprehensive ATH history)
     console.log('🔍 ATH History: Fetching top 200 cryptocurrency data...')
@@ -38,8 +46,22 @@ export async function GET(request: NextRequest) {
       lastUpdated: crypto.lastUpdated,
     }))
 
-    // Sort by market cap rank (1 = highest market cap)
-    allATHRecords.sort((a, b) => a.marketCapRank - b.marketCapRank)
+    // Apply sorting based on sortBy parameter
+    if (finalSortBy === 'athDate') {
+      // Sort by ATH date
+      allATHRecords.sort((a, b) => {
+        const dateA = new Date(a.athDate).getTime()
+        const dateB = new Date(b.athDate).getTime()
+        return finalSortOrder === 'desc' ? dateB - dateA : dateA - dateB
+      })
+      console.log(`🔍 ATH History: Sorted by ATH date (${finalSortOrder})`)
+    } else {
+      // Default: Sort by market cap rank (1 = highest market cap)
+      allATHRecords.sort((a, b) => {
+        return finalSortOrder === 'desc' ? b.marketCapRank - a.marketCapRank : a.marketCapRank - b.marketCapRank
+      })
+      console.log(`🔍 ATH History: Sorted by market cap rank (${finalSortOrder})`)
+    }
 
     // Apply pagination
     const totalRecords = allATHRecords.length
@@ -56,6 +78,8 @@ export async function GET(request: NextRequest) {
       currentPage,
       pageSize,
       totalPages: Math.ceil(totalRecords / pageSize),
+      sortBy: finalSortBy,
+      sortOrder: finalSortOrder,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
