@@ -24,7 +24,8 @@
       "Bash(gh:*)",
       "Bash(npm run dev:*)",
       "Bash(grep:*)",
-      "WebFetch(domain:nextjs.org)"
+      "WebFetch(domain:nextjs.org)",
+      "Bash(pip install:*)"
     ],
     "deny": []
   }
