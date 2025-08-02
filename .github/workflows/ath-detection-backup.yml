@@ -10,7 +10,7 @@ jobs:
   ath-detection-backup:
     name: ATH Detection Backup
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 2
     
     steps:
       - name: Wait 30 seconds (offset)
@@ -28,7 +28,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
             -H "User-Agent: CoinSpree-GitHub-Actions-Backup/1.0" \
-            --max-time 25 \
+            --max-time 90 \
             "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/ath-detection")
           
           # Extract HTTP status and body
