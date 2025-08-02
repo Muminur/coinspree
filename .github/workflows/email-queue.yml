@@ -9,7 +9,7 @@ jobs:
   email-queue:
     name: Process Email Queue
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 2
     
     steps:
       - name: Process Email Queue

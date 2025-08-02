@@ -1,0 +1,46 @@
+name: Workflow Monitor
+on:
+  schedule:
+    # Monitor workflow frequency every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  monitor:
+    name: Monitor Workflow Frequency
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    
+    steps:
+      - name: Check Workflow Execution Frequency
+        run: |
+          echo "📊 Monitoring GitHub Actions workflow frequency..."
+          echo "⏰ Monitor run time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          
+          # Log this monitoring execution
+          RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
+            -H "User-Agent: CoinSpree-Monitor/1.0" \
+            --max-time 30 \
+            --data '{"monitor": true, "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' \
+            "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/health-check")
+          
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Monitoring ping successful"
+            echo "::notice title=Monitor Success::Workflow monitoring active at $(date -u +"%H:%M")"
+          else
+            echo "⚠️ Monitoring ping failed with status: $HTTP_STATUS"
+            echo "::warning title=Monitor Warning::Health check returned HTTP $HTTP_STATUS"
+          fi
+          
+          # Report current workflow execution
+          echo "🔍 This workflow should run every 5 minutes"
+          echo "📈 Use this to monitor if GitHub Actions cron is working reliably"
+          echo "⏱️ Expected next run: $(date -u -d '+5 minutes' +"%H:%M:%S UTC")"
+        env:
+          VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
+          CRON_SECRET_KEY: ${{ secrets.CRON_SECRET_KEY }}

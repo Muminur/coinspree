@@ -1,41 +1,41 @@
-name: ATH Detection Cron Job
+name: ATH Detection Backup (Offset)
 on:
   schedule:
-    # Run every minute for reliable ATH detection
-    - cron: '* * * * *'  # Every minute
+    # Run 30 seconds after main workflow (offset to increase frequency)
+    # This creates effectively 30-second intervals when combined with main workflow
+    - cron: '* * * * *'  # Every minute (but delayed by 30 seconds in the script)
   workflow_dispatch: # Allow manual triggers for testing
 
 jobs:
-  ath-detection:
-    name: ATH Detection
+  ath-detection-backup:
+    name: ATH Detection Backup
     runs-on: ubuntu-latest
     timeout-minutes: 1
     
-    # Add concurrency to prevent multiple runs from overlapping
-    concurrency:
-      group: ath-detection
-      cancel-in-progress: false
-    
     steps:
-      - name: ATH Detection
+      - name: Wait 30 seconds (offset)
+        run: sleep 30
+        
+      - name: ATH Detection Backup
         run: |
-          echo "🔍 Starting ATH detection for CoinSpree..."
+          echo "🔍 Starting backup ATH detection for CoinSpree..."
           echo "⏰ Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "🔄 This is the backup/offset workflow for increased frequency"
           
           # Make authenticated request to ATH detection endpoint
           RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
-            -H "User-Agent: CoinSpree-GitHub-Actions/1.0" \
-            --max-time 50 \
+            -H "User-Agent: CoinSpree-GitHub-Actions-Backup/1.0" \
+            --max-time 25 \
             "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/ath-detection")
           
           # Extract HTTP status and body
           HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
           
-          echo "📊 Response Status: $HTTP_STATUS"
+          echo "📊 Backup Response Status: $HTTP_STATUS"
           
           # Check if request was successful
           if [ "$HTTP_STATUS" -eq 200 ]; then
@@ -43,37 +43,25 @@ jobs:
             ATH_COUNT=$(echo "$BODY" | grep -o '"athCount":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
             DURATION=$(echo "$BODY" | grep -o '"duration":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
             
-            echo "✅ ATH detection completed successfully"
+            echo "✅ Backup ATH detection completed successfully"
             echo "🚀 ATH Count: $ATH_COUNT"
             echo "⏱️ Processing time: ${DURATION}ms"
             
             # Success summary
             if [ "$ATH_COUNT" -gt 0 ]; then
-              echo "🎉 $ATH_COUNT new All-Time Highs detected and notifications sent!"
+              echo "🎉 BACKUP: $ATH_COUNT new All-Time Highs detected!"
             else
-              echo "📈 No new ATHs detected this minute"
+              echo "📈 BACKUP: No new ATHs detected this cycle"
             fi
             
             # Log workflow success
-            echo "::notice title=ATH Detection Success::Processed $ATH_COUNT ATHs in ${DURATION}ms"
-            
-          elif [ "$HTTP_STATUS" -eq 401 ]; then
-            echo "❌ Authentication failed (401 Unauthorized)"
-            echo "🔍 Check CRON_SECRET_KEY in repository secrets"
-            echo "::error title=Authentication Error::CRON_SECRET_KEY authentication failed"
-            exit 1
-            
-          elif [ "$HTTP_STATUS" -eq 500 ]; then
-            echo "❌ Server error (500 Internal Server Error)"
-            echo "🔍 Server response: $BODY"
-            echo "::error title=Server Error::ATH detection endpoint returned 500 error"
-            exit 1
+            echo "::notice title=Backup ATH Detection Success::Processed $ATH_COUNT ATHs in ${DURATION}ms"
             
           else
-            echo "❌ Unexpected response status: $HTTP_STATUS"
+            echo "❌ Backup workflow failed with status: $HTTP_STATUS"
             echo "🔍 Response body: $BODY"
-            echo "::warning title=Unexpected Status::Received HTTP $HTTP_STATUS"
-            exit 1
+            # Don't fail the backup workflow - it's supplementary
+            echo "::warning title=Backup Failed::Backup ATH detection returned HTTP $HTTP_STATUS"
           fi
         env:
           VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
