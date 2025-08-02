@@ -16,8 +16,8 @@ jobs:
       cancel-in-progress: false
     
     steps:
-      - name: Wait 5 seconds (offset)
-        run: sleep 5
+      - name: Wait 80 seconds (offset)
+        run: sleep 80
         
       - name: ATH Detection Backup 6
         run: |

@@ -8,7 +8,7 @@ jobs:
   ath-detection-backup-8:
     name: ATH Detection Backup 8
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 4
     
     # Add concurrency to prevent multiple runs from overlapping
     concurrency:
@@ -16,8 +16,8 @@ jobs:
       cancel-in-progress: false
     
     steps:
-      - name: Wait 7 seconds (offset)
-        run: sleep 7
+      - name: Wait 100 seconds (offset)
+        run: sleep 100
         
       - name: ATH Detection Backup 8
         run: |
