@@ -17,6 +17,9 @@ jobs:
           echo "📅 Starting subscription maintenance for CoinSpree..."
           
           # Make authenticated request to subscription maintenance endpoint
+          echo "🔗 Endpoint: ${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/subscription-expiry"
+          echo "🔑 Using secret: ${CRON_SECRET_KEY:0:20}..."
+          
           RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
@@ -25,9 +28,20 @@ jobs:
             --max-time 240 \
             "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/subscription-expiry")
           
-          # Extract HTTP status and body
-          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          # Check if curl command succeeded
+          if [ $? -ne 0 ]; then
+            echo "❌ Curl command failed"
+            exit 1
+          fi
+          
+          # Extract HTTP status and body with better error handling
+          if echo "$RESPONSE" | grep -q "HTTP_STATUS:"; then
+            HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+            BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          else
+            echo "❌ Invalid response format: $RESPONSE"
+            exit 1
+          fi
           
           echo "📊 Response Status: $HTTP_STATUS"
           echo "📋 Response Body: $BODY"
@@ -36,10 +50,10 @@ jobs:
           if [ "$HTTP_STATUS" -eq 200 ]; then
             echo "✅ Subscription maintenance completed successfully"
             
-            # Parse JSON response to extract metrics
-            EMAILS_SENT=$(echo "$BODY" | grep -o '"emailsSent":[0-9]*' | cut -d: -f2 || echo "0")
-            SUBSCRIPTIONS_EXPIRED=$(echo "$BODY" | grep -o '"subscriptionsExpired":[0-9]*' | cut -d: -f2 || echo "0")
-            DURATION=$(echo "$BODY" | grep -o '"duration":[0-9]*' | cut -d: -f2 || echo "0")
+            # Parse JSON response to extract metrics with better error handling
+            EMAILS_SENT=$(echo "$BODY" | grep -o '"emailsSent":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
+            SUBSCRIPTIONS_EXPIRED=$(echo "$BODY" | grep -o '"subscriptionsExpired":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
+            DURATION=$(echo "$BODY" | grep -o '"duration":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
             
             echo "📧 Expiry emails sent: $EMAILS_SENT"
             echo "⏰ Subscriptions expired: $SUBSCRIPTIONS_EXPIRED"
@@ -78,6 +92,9 @@ jobs:
           echo "🧹 Starting session cleanup for CoinSpree..."
           
           # Make authenticated request to session cleanup endpoint
+          echo "🔗 Endpoint: ${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/cleanup-sessions"
+          echo "🔑 Using secret: ${CRON_SECRET_KEY:0:20}..."
+          
           RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
@@ -86,18 +103,29 @@ jobs:
             --max-time 120 \
             "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/cleanup-sessions")
           
-          # Extract HTTP status and body
-          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
-          
-          echo "📊 Session Cleanup Status: $HTTP_STATUS"
+          # Check if curl command succeeded
+          if [ $? -ne 0 ]; then
+            echo "❌ Curl command failed"
+            echo "⚠️ Session cleanup is non-critical, continuing..."
+          else
+            # Extract HTTP status and body with better error handling
+            if echo "$RESPONSE" | grep -q "HTTP_STATUS:"; then
+              HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+              BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+            else
+              echo "❌ Invalid response format: $RESPONSE"
+              HTTP_STATUS="0"
+              BODY=""
+            fi
+            
+            echo "📊 Session Cleanup Status: $HTTP_STATUS"
           
           # Check if request was successful
           if [ "$HTTP_STATUS" -eq 200 ]; then
             echo "✅ Session cleanup completed successfully"
             
             # Parse JSON response if available
-            CLEANED=$(echo "$BODY" | grep -o '"cleaned":[0-9]*' | cut -d: -f2 || echo "unknown")
+            CLEANED=$(echo "$BODY" | grep -o '"cleaned":[0-9]*' | cut -d: -f2 2>/dev/null || echo "unknown")
             
             if [ "$CLEANED" != "unknown" ]; then
               echo "🧹 Expired sessions cleaned: $CLEANED"
@@ -105,6 +133,7 @@ jobs:
           else
             echo "⚠️ Session cleanup returned status $HTTP_STATUS (non-critical)"
             echo "📋 Response: $BODY"
+          fi
           fi
         env:
           VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
