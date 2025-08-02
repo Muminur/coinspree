@@ -1,0 +1,111 @@
+name: Subscription Maintenance
+on:
+  schedule:
+    # Run subscription maintenance every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allow manual triggers for testing
+
+jobs:
+  subscription-maintenance:
+    name: Subscription Expiry & Maintenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Subscription Maintenance
+        run: |
+          echo "📅 Starting subscription maintenance for CoinSpree..."
+          
+          # Make authenticated request to subscription maintenance endpoint
+          RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
+            -H "User-Agent: CoinSpree-GitHub-Actions/1.0" \
+            --max-time 240 \
+            "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/subscription-expiry")
+          
+          # Extract HTTP status and body
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          
+          echo "📊 Response Status: $HTTP_STATUS"
+          echo "📋 Response Body: $BODY"
+          
+          # Check if request was successful
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Subscription maintenance completed successfully"
+            
+            # Parse JSON response to extract metrics
+            EMAILS_SENT=$(echo "$BODY" | grep -o '"emailsSent":[0-9]*' | cut -d: -f2 || echo "0")
+            SUBSCRIPTIONS_EXPIRED=$(echo "$BODY" | grep -o '"subscriptionsExpired":[0-9]*' | cut -d: -f2 || echo "0")
+            DURATION=$(echo "$BODY" | grep -o '"duration":[0-9]*' | cut -d: -f2 || echo "0")
+            
+            echo "📧 Expiry emails sent: $EMAILS_SENT"
+            echo "⏰ Subscriptions expired: $SUBSCRIPTIONS_EXPIRED"
+            echo "⏱️ Processing time: ${DURATION}ms"
+            
+            # Log subscription maintenance metrics
+            if [ "$EMAILS_SENT" -gt 0 ] || [ "$SUBSCRIPTIONS_EXPIRED" -gt 0 ]; then
+              echo "📬 Subscription maintenance completed:"
+              if [ "$EMAILS_SENT" -gt 0 ]; then
+                echo "  - $EMAILS_SENT expiry warning emails sent to users"
+              fi
+              if [ "$SUBSCRIPTIONS_EXPIRED" -gt 0 ]; then
+                echo "  - $SUBSCRIPTIONS_EXPIRED subscriptions marked as expired"
+              fi
+            else
+              echo "✨ No subscription maintenance required - all subscriptions are current"
+            fi
+          else
+            echo "❌ Subscription maintenance failed with status $HTTP_STATUS"
+            echo "🔍 Error details: $BODY"
+            exit 1
+          fi
+        env:
+          VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
+          CRON_SECRET_KEY: ${{ secrets.CRON_SECRET_KEY }}
+
+  session-cleanup:
+    name: Session Cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: subscription-maintenance # Run after subscription maintenance
+    
+    steps:
+      - name: Clean Expired Sessions
+        run: |
+          echo "🧹 Starting session cleanup for CoinSpree..."
+          
+          # Make authenticated request to session cleanup endpoint
+          RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
+            -H "User-Agent: CoinSpree-GitHub-Actions/1.0" \
+            --max-time 120 \
+            "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/cleanup-sessions")
+          
+          # Extract HTTP status and body
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          
+          echo "📊 Session Cleanup Status: $HTTP_STATUS"
+          
+          # Check if request was successful
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Session cleanup completed successfully"
+            
+            # Parse JSON response if available
+            CLEANED=$(echo "$BODY" | grep -o '"cleaned":[0-9]*' | cut -d: -f2 || echo "unknown")
+            
+            if [ "$CLEANED" != "unknown" ]; then
+              echo "🧹 Expired sessions cleaned: $CLEANED"
+            fi
+          else
+            echo "⚠️ Session cleanup returned status $HTTP_STATUS (non-critical)"
+            echo "📋 Response: $BODY"
+          fi
+        env:
+          VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
+          CRON_SECRET_KEY: ${{ secrets.CRON_SECRET_KEY }}

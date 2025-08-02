@@ -1,0 +1,66 @@
+name: Email Queue Processing
+on:
+  schedule:
+    # Process email queue every 2 minutes
+    - cron: '*/2 * * * *'
+  workflow_dispatch: # Allow manual triggers for testing
+
+jobs:
+  email-queue:
+    name: Process Email Queue
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    
+    steps:
+      - name: Process Email Queue
+        run: |
+          echo "📧 Starting email queue processing for CoinSpree..."
+          
+          # Make authenticated request to email queue endpoint
+          RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
+            -H "User-Agent: CoinSpree-GitHub-Actions/1.0" \
+            --max-time 120 \
+            "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/email-queue")
+          
+          # Extract HTTP status and body
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          
+          echo "📊 Response Status: $HTTP_STATUS"
+          echo "📋 Response Body: $BODY"
+          
+          # Check if request was successful
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Email queue processing completed successfully"
+            
+            # Parse JSON response to extract metrics
+            PROCESSED=$(echo "$BODY" | grep -o '"processed":[0-9]*' | cut -d: -f2 || echo "0")
+            SENT=$(echo "$BODY" | grep -o '"sent":[0-9]*' | cut -d: -f2 || echo "0")
+            FAILED=$(echo "$BODY" | grep -o '"failed":[0-9]*' | cut -d: -f2 || echo "0")
+            DURATION=$(echo "$BODY" | grep -o '"duration":[0-9]*' | cut -d: -f2 || echo "0")
+            
+            echo "📧 Emails processed: $PROCESSED"
+            echo "✅ Emails sent: $SENT"
+            echo "❌ Emails failed: $FAILED"
+            echo "⏱️ Processing time: ${DURATION}ms"
+            
+            # Log email queue metrics
+            if [ "$PROCESSED" -gt 0 ]; then
+              echo "📬 Email queue processing completed - $SENT emails delivered successfully"
+              if [ "$FAILED" -gt 0 ]; then
+                echo "⚠️ Warning: $FAILED emails failed to send"
+              fi
+            else
+              echo "📭 Email queue empty - no emails to process"
+            fi
+          else
+            echo "❌ Email queue processing failed with status $HTTP_STATUS"
+            echo "🔍 Error details: $BODY"
+            exit 1
+          fi
+        env:
+          VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
+          CRON_SECRET_KEY: ${{ secrets.CRON_SECRET_KEY }}

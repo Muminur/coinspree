@@ -4,11 +4,19 @@ import { sendSubscriptionExpiryEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret for security
+    // Verify cron secret for security - check both CRON_SECRET and CRON_SECRET_KEY
     const authHeader = request.headers.get('authorization')
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const cronSecret = process.env.CRON_SECRET_KEY || process.env.CRON_SECRET
+    
+    if (!cronSecret) {
+      console.error('❌ CRON_SECRET_KEY not configured in environment variables')
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+    }
+    
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      console.error('❌ Unauthorized subscription expiry access attempt:', authHeader?.substring(0, 20) + '...')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

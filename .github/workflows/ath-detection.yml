@@ -1,0 +1,87 @@
+name: ATH Detection Cron Job
+on:
+  schedule:
+    # Run every 30 seconds for ultra real-time ATH detection
+    # Note: GitHub Actions minimum is 1 minute, so we'll use multiple jobs
+    - cron: '* * * * *'  # Every minute
+  workflow_dispatch: # Allow manual triggers for testing
+
+jobs:
+  ath-detection-cycle:
+    name: Ultra Real-Time ATH Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    
+    steps:
+      - name: ATH Detection Cycle 1 (0 seconds)
+        run: |
+          echo "🔍 Starting ATH detection cycle 1 for CoinSpree..."
+          
+          # Make authenticated request to ATH detection endpoint
+          RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
+            -H "User-Agent: CoinSpree-GitHub-Actions/1.0" \
+            --max-time 25 \
+            "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/ath-detection")
+          
+          # Extract HTTP status and body
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          
+          echo "📊 Cycle 1 Status: $HTTP_STATUS"
+          
+          # Check if request was successful
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            ATH_COUNT=$(echo "$BODY" | grep -o '"athCount":[0-9]*' | cut -d: -f2 || echo "0")
+            echo "✅ Cycle 1: $ATH_COUNT ATHs detected"
+          else
+            echo "❌ Cycle 1 failed with status $HTTP_STATUS"
+          fi
+        env:
+          VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
+          CRON_SECRET_KEY: ${{ secrets.CRON_SECRET_KEY }}
+
+      - name: Wait 30 seconds
+        run: sleep 30
+
+      - name: ATH Detection Cycle 2 (30 seconds)
+        run: |
+          echo "🔍 Starting ATH detection cycle 2 for CoinSpree..."
+          
+          # Make authenticated request to ATH detection endpoint
+          RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
+            -H "User-Agent: CoinSpree-GitHub-Actions/1.0" \
+            --max-time 25 \
+            "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/ath-detection")
+          
+          # Extract HTTP status and body
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          
+          echo "📊 Cycle 2 Status: $HTTP_STATUS"
+          
+          # Check if request was successful
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            ATH_COUNT=$(echo "$BODY" | grep -o '"athCount":[0-9]*' | cut -d: -f2 || echo "0")
+            DURATION=$(echo "$BODY" | grep -o '"duration":[0-9]*' | cut -d: -f2 || echo "0")
+            
+            echo "✅ Cycle 2: $ATH_COUNT ATHs detected"
+            echo "⏱️ Processing time: ${DURATION}ms"
+            
+            # Log final summary
+            if [ "$ATH_COUNT" -gt 0 ]; then
+              echo "🎉 $ATH_COUNT new All-Time Highs detected and notifications sent!"
+            else
+              echo "📈 No new ATHs detected this minute"
+            fi
+          else
+            echo "❌ Cycle 2 failed with status $HTTP_STATUS"
+          fi
+        env:
+          VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
+          CRON_SECRET_KEY: ${{ secrets.CRON_SECRET_KEY }}
