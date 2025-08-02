@@ -1,0 +1,71 @@
+name: ATH Detection Backup 5
+on:
+  schedule:
+    - cron: '* * * * *'  # Every minute
+  workflow_dispatch: # Allow manual triggers for testing
+
+jobs:
+  ath-detection-backup-5:
+    name: ATH Detection Backup 5
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    
+    # Add concurrency to prevent multiple runs from overlapping
+    concurrency:
+      group: ath-detection-backup-5
+      cancel-in-progress: false
+    
+    steps:
+      - name: Wait 4 seconds (offset)
+        run: sleep 4
+        
+      - name: ATH Detection Backup 5
+        run: |
+          echo "🔍 Starting backup ATH detection 5 for CoinSpree..."
+          echo "⏰ Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "🔄 This is backup workflow #5 for increased frequency"
+          
+          # Make authenticated request to ATH detection endpoint
+          RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET_KEY }}" \
+            -H "User-Agent: CoinSpree-GitHub-Actions-Backup-5/1.0" \
+            --max-time 90 \
+            "${{ secrets.VERCEL_DEPLOYMENT_URL }}/api/cron/ath-detection")
+          
+          # Extract HTTP status and body
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          
+          echo "📊 Backup 5 Response Status: $HTTP_STATUS"
+          
+          # Check if request was successful
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            # Parse response
+            ATH_COUNT=$(echo "$BODY" | grep -o '"athCount":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
+            DURATION=$(echo "$BODY" | grep -o '"duration":[0-9]*' | cut -d: -f2 2>/dev/null || echo "0")
+            
+            echo "✅ Backup 5 ATH detection completed successfully"
+            echo "🚀 ATH Count: $ATH_COUNT"
+            echo "⏱️ Processing time: ${DURATION}ms"
+            
+            # Success summary
+            if [ "$ATH_COUNT" -gt 0 ]; then
+              echo "🎉 BACKUP 5: $ATH_COUNT new All-Time Highs detected!"
+            else
+              echo "📈 BACKUP 5: No new ATHs detected this cycle"
+            fi
+            
+            # Log workflow success
+            echo "::notice title=Backup 5 ATH Detection Success::Processed $ATH_COUNT ATHs in ${DURATION}ms"
+            
+          else
+            echo "❌ Backup 5 workflow failed with status: $HTTP_STATUS"
+            echo "🔍 Response body: $BODY"
+            # Don't fail the backup workflow - it's supplementary
+            echo "::warning title=Backup 5 Failed::Backup ATH detection returned HTTP $HTTP_STATUS"
+          fi
+        env:
+          VERCEL_DEPLOYMENT_URL: ${{ secrets.VERCEL_DEPLOYMENT_URL }}
+          CRON_SECRET_KEY: ${{ secrets.CRON_SECRET_KEY }}
